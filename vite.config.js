@@ -1,0 +1,23 @@
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
+
+// https://vite.dev/config/
+export default defineConfig({
+  base: './',
+  plugins: [
+    react(),
+    basicSsl()
+  ],
+  server: {
+    host: true,
+    https: true,
+    port: 5175,
+    strictPort: true,
+  },
+  resolve: {
+    alias: {
+      stream: 'stream-browserify',
+    },
+  },
+})
