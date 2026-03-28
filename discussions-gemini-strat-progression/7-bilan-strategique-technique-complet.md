@@ -199,9 +199,10 @@ L'Expert IA est invité à utiliser cet état des lieux pour remplir les mission
 ### 📝 Directives Opérationnelles (Master Prompt)
 > **Mission** : Dé-mocker les stores Zustand et remplacer le stockage local par le backend Supabase, en respectant le schéma multi-tenant sécurisé.
 
+- **Langage** : Tout le code produit doit être en **TypeScript** (fichiers `.ts` / `.tsx`).
 - **Auth Layer** : Intégrer `@supabase/supabase-js`. Mapper le `businessDomain`.
-- **Sync Layer** : Connecter `useCatalogStore.js` à la table `products` avec le mode **Realtime**.
-- **Checkout Layer** : Implémenter la persistance résiliente (Offline-first) dans `useCartStore.js`.
+- **Sync Layer** : Connecter `useCatalogStore` à la table `products`.
+- **Checkout Layer** : Implémenter la persistance résiliente (Offline-first).
 - **UI Policy** : Respecter l'identité visuelle **HeroUI** et **Tailwind 4**.
 
 Le produit doit être commercialisable sous 21 jours. Nous attendons des solutions, pas des questions. À vous de jouer.

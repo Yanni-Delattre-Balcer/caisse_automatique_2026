@@ -14,13 +14,15 @@ Ce document contient le prompt "Master" à fournir à votre IA de développement
 **Objectif** : Connecter l'application à Supabase.
 
 **Missions Techniques** :
-1. **Initialisation** : Configurer `@supabase/supabase-js` avec variables d'environnement (.env).
+1. **Initialisation** : Configurer `@supabase/supabase-js`. Utiliser **TypeScript** pour tout le nouveau code.
 2. **Authentification** : Créer un `useAuthStore` (Zustand) gérant le Sign-up (avec `business_type`) et le Login.
 3. **Liaison des données** :
    - `useCatalogStore` : Récupérer les produits depuis la table `products`.
    - `useCartStore` : Insérer les ventes validées dans la table `sales`.
 4. **Sécurité** : Inclure le `business_id` dans chaque requête pour respecter les politiques RLS.
-5. **Mode Offline** : Stockage temporaire (IndexedDB) si Supabase est injoignable.
+5. **Mode Offline** : Stockage temporaire (IndexedDB).
+
+**Règle d'or** : Tout le code produit doit être en **TypeScript** (fichiers `.ts` / `.tsx`).
 
 **Schéma SQL** : (Collez ici le script de la doc 4-precisions-supabase.md)
 ```
