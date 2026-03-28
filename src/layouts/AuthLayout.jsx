@@ -1,32 +1,32 @@
 import React from 'react';
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 
 export function AuthLayout() {
   return (
-    <div className="min-h-screen bg-[#f8f9fa] font-sans flex text-gray-900 selection:bg-blue-500/30">
-      {/* Left side: Form */}
-      <div className="w-full lg:w-[45%] flex flex-col px-8 sm:px-16 py-10 relative bg-white">
-        {/* Logo */}
-        <Link to="/" className="text-2xl font-black tracking-tight bg-gradient-to-br from-[#00f2ff] to-[#0055ff] text-transparent bg-clip-text w-max">
-          OmniPOS
-        </Link>
-        <div className="flex-1 flex flex-col justify-center max-w-sm w-full mx-auto">
-          <Outlet />
-        </div>
-      </div>
+    <div className="min-h-screen flex items-center justify-center relative font-sans bg-[#f0f4ff] overflow-hidden">
+      {/* Abstract background blobs for the glass effect to shine */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-gradient-to-br from-[#00f2ff]/30 to-[#0055ff]/30 rounded-full blur-[100px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-gradient-to-br from-[#0055ff]/20 to-[#00f2ff]/20 rounded-full blur-[100px]" />
       
-      {/* Right side: Branding/Image */}
-      <div className="hidden lg:flex lg:flex-1 bg-gradient-to-b from-[#f8f9fa] to-[#eaf0ff] relative items-center justify-center overflow-hidden border-l border-gray-100">
-        {/* Abstract decor */}
-        <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] bg-gradient-to-br from-[#00f2ff]/20 to-[#0055ff]/20 rounded-full blur-[120px]" />
+      <div className="relative z-10 w-full max-w-[480px] px-4 py-8">
+        {/* Outer glow */}
+        <div className="absolute -inset-[1px] rounded-[2.2rem] bg-gradient-to-br from-white/80 via-blue-100/30 to-white/60 pointer-events-none z-0 blur-[2px]" />
         
-        <div className="relative z-10 flex flex-col items-center text-center p-12">
-            <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-gray-900 mb-6 max-w-lg leading-tight">
-                Le poste d'encaissement<br/>de nouvelle génération.
-            </h2>
-            <p className="text-lg text-gray-500 font-medium max-w-md">
-                Gérez votre entreprise en toute simplicité avec notre interface ultra-rapide, pensée spécifiquement pour votre activité.
-            </p>
+        {/* Glass card */}
+        <div
+            className="relative z-10 rounded-[2rem] p-8 sm:p-10"
+            style={{
+                background: 'rgba(255,255,255,0.55)',
+                backdropFilter: 'blur(60px) saturate(200%) brightness(1.05)',
+                WebkitBackdropFilter: 'blur(60px) saturate(200%) brightness(1.05)',
+                border: '1px solid rgba(255,255,255,0.70)',
+                boxShadow: '0 24px 80px rgba(0,60,200,0.08), 0 4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.90)',
+            }}
+        >
+            {/* Inner top shimmer */}
+            <div className="absolute top-0 left-16 right-16 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
+            
+            <Outlet />
         </div>
       </div>
     </div>
