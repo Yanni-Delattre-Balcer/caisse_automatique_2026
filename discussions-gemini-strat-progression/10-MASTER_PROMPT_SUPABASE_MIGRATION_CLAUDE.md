@@ -24,7 +24,7 @@ Tu interviens sur une application React (Vite + React 19 + Tailwind CSS 4 + Hero
 - Ne jamais modifier les noms des stores (`useAuthStore`, `useCatalogStore`, `useCartStore`).
 - Ne jamais modifier les interfaces des méthodes publiques exposées par les stores (les composants UI ne doivent subir aucune modification).
 - Respecter l'identité visuelle HeroUI + Tailwind 4 pour tout nouveau composant.
-- Tout le code produit doit être en **JavaScript (JSX)**, pas TypeScript.
+- Tout le code produit doit être en **TypeScript**.
 - La clé publique Supabase (`VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`) sera fournie via `.env`. Tu ne dois jamais hardcoder ces valeurs.
 
 ---

@@ -1,16 +1,37 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { useAuthStore } from './store/useAuthStore';
+import { useCartStore } from './store/useCartStore';
+
+// Layouts
 import { LandingLayout } from './layouts/LandingLayout';
-import { LandingPage } from './pages/LandingPage';
 import { AuthLayout } from './layouts/AuthLayout';
+import { DashboardLayout } from './layouts/DashboardLayout';
+
+// Pages
+import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
-import { DashboardLayout } from './layouts/DashboardLayout';
 import { PosPage } from './pages/PosPage';
 import { RemoteScannerView } from './features/scanner/RemoteScannerView';
 import { DashboardPage } from './pages/DashboardPage';
 
 export default function App() {
+  const initializeAuth = useAuthStore((state) => state.initialize);
+  const syncOfflineQueue = useCartStore((state) => state.syncOfflineQueue);
+
+  // Restaurer la session Supabase au démarrage de l'app
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
+  // Synchroniser les ventes offline dès que le réseau revient
+  useEffect(() => {
+    syncOfflineQueue();
+    window.addEventListener('online', syncOfflineQueue);
+    return () => window.removeEventListener('online', syncOfflineQueue);
+  }, [syncOfflineQueue]);
+
   return (
     <Routes>
       {/* Vitrine Commerciale */}
