@@ -34,15 +34,35 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   // Signature rétrocompatible avec l'existant — le paramètre domain est ignoré,
   // le businessId depuis useAuthStore est la source de vérité
   hydrateForDomain: async (_domain?: string) => {
-    const { user } = useAuthStore.getState();
-    if (!user?.businessId) return;
+    const { user, isDemo } = useAuthStore.getState();
+    if (!user?.businessId && !isDemo) return;
+
+    if (isDemo) {
+      set({
+        items: [
+          { id: 'p1', name: 'Pain au Chocolat', price: 1.20, price_ht: 1.00, tva_rate: 20, category: 'Viennoiserie', stock: 24, barcode: '123' },
+          { id: 'p2', name: 'Croissant Beurre', price: 1.10, price_ht: 0.92, tva_rate: 20, category: 'Viennoiserie', stock: 18, barcode: '124' },
+          { id: 'p3', name: 'Baguette Tradition', price: 1.30, price_ht: 1.23, tva_rate: 5.5, category: 'Pains', stock: 50, barcode: '125' },
+          { id: 'p4', name: 'Café Expresso', price: 1.50, price_ht: 1.36, tva_rate: 10, category: 'Boissons', stock: 100, barcode: '126' },
+          { id: 'p5', name: 'Jus d\'Orange Frais', price: 3.50, price_ht: 3.18, tva_rate: 10, category: 'Boissons', stock: 12, barcode: '127' },
+          { id: 'p6', name: 'Sandwich Jambon Beurre', price: 4.80, price_ht: 4.36, tva_rate: 10, category: 'Snacking', stock: 15, barcode: '128' },
+          { id: 'p7', name: 'Eclair Chocolat', price: 2.80, price_ht: 2.33, tva_rate: 20, category: 'Pâtisserie', stock: 8, barcode: '129' },
+          { id: 'p8', name: 'Tartelette Framboise', price: 3.90, price_ht: 3.25, tva_rate: 20, category: 'Pâtisserie', stock: 6, barcode: '130' },
+        ],
+        isLoading: false,
+      });
+      return;
+    }
+
+    const bizId = user?.businessId;
+    if (!bizId) return;
 
     set({ isLoading: true });
 
     const { data, error } = await supabase
       .from('products')
       .select('id, name, price_ht, tva_rate, category, stock_quantity, barcode')
-      .eq('business_id', user.businessId)
+      .eq('business_id', bizId)
       .order('category', { ascending: true });
 
     if (error) {
@@ -56,20 +76,19 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       isLoading: false,
     });
 
-    // Nettoyer l'abonnement précédent si on change de compte
-    const prevChannel = get()._realtimeChannel;
-    if (prevChannel) supabase.removeChannel(prevChannel);
+    // Ne pas s'abonner au temps réel en mode démo
+    if (isDemo) return;
 
     // Abonnement Realtime — toute modification dans Supabase Studio se répercute instantanément
     const channel = supabase
-      .channel(`products-${user.businessId}`)
+      .channel(`products-${bizId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'products',
-          filter: `business_id=eq.${user.businessId}`,
+          filter: `business_id=eq.${bizId}`,
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
@@ -99,7 +118,14 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   },
 
   addItem: async (itemData) => {
-    const { user } = useAuthStore.getState();
+    const { user, isDemo } = useAuthStore.getState();
+    if (isDemo) {
+      // Simulation locale en mode démo
+      set((state) => ({
+        items: [...state.items, { ...itemData, id: Math.random().toString(36).substr(2, 9), price: itemData.price_ht * (1 + (itemData.tva_rate || 20) / 100) } as any]
+      }));
+      return;
+    }
     if (!user?.businessId) throw new Error('Non authentifié');
     const { error } = await supabase.from('products').insert({
       business_id: user.businessId,

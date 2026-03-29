@@ -8,10 +8,13 @@ export const useConfigStore = create(
       cashierName: 'Admin',
       taxRates: [20, 10, 5.5, 2.1], // Standard French VAT rates
       businessName: 'OmniPOS Demo',
+      theme: 'dark',
 
       setBusinessMode: (mode) => set({ businessMode: mode }),
       setCashierName: (name) => set({ cashierName: name }),
       setBusinessName: (name) => set({ businessName: name }),
+      setTheme: (theme) => set({ theme }),
+      toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
     }),
     {
       name: 'omnipos-config', // Persisted in localStorage

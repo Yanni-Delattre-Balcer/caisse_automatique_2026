@@ -7,8 +7,10 @@ import type { AppUser } from '../types';
 interface AuthState {
   user: AppUser | null;
   isAuthenticated: boolean;
+  isDemo: boolean;
   isLoading: boolean;
   initialize: () => Promise<void>;
+  loginAsDemo: () => void;
   login: (email: string, password: string) => Promise<void>;
   register: (
     email: string,
@@ -25,6 +27,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
+      isDemo: false,
       isLoading: false,
 
       // Appelé une seule fois dans App.tsx au montage
@@ -41,7 +44,7 @@ export const useAuthStore = create<AuthState>()(
           if (session?.user) {
             await get()._hydrateUserFromSession(session.user);
           } else {
-            set({ user: null, isAuthenticated: false });
+            set({ user: null, isAuthenticated: false, isDemo: false });
           }
         });
         set({ isLoading: false });
@@ -124,7 +127,21 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         await supabase.auth.signOut();
-        set({ user: null, isAuthenticated: false });
+        set({ user: null, isAuthenticated: false, isDemo: false });
+      },
+
+      loginAsDemo: () => {
+        set({
+          user: {
+            id: 'demo-user-id',
+            email: 'demo@omnipos.com',
+            companyName: 'Boulangerie Louise',
+            businessDomain: 'Restauration',
+            businessId: 'demo-business-id',
+          },
+          isAuthenticated: true,
+          isDemo: true,
+        });
       },
     }),
     {
@@ -133,6 +150,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        isDemo: state.isDemo,
       }),
     }
   )
