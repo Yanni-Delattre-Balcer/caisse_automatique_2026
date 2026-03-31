@@ -1,8 +1,9 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button, Card } from '@heroui/react';
 import { Smartphone, Zap, Cloud, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
+import { useToastStore } from '../store/useToastStore';
 
 function FadeIn({ children, delay = 0, className = '' }) {
     const ref = useRef(null);
@@ -21,13 +22,37 @@ function FadeIn({ children, delay = 0, className = '' }) {
 }
 
 export function LandingPage() {
+  const addToast = useToastStore((s) => s.addToast);
+  const [loadingPlan, setLoadingPlan] = useState(null);
+
+  const handleSubscribe = async (plan) => {
+    const priceId = plan === 'monthly'
+      ? import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID
+      : import.meta.env.VITE_STRIPE_LIFETIME_PRICE_ID;
+
+    if (!priceId || !import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) {
+      addToast({ type: 'info', message: 'Paiement Stripe non configuré. Voir docs/STRIPE_SETUP.md' });
+      return;
+    }
+
+    setLoadingPlan(plan);
+    try {
+      const { redirectToCheckout } = await import('../lib/stripe');
+      await redirectToCheckout(priceId);
+    } catch (err) {
+      addToast({ type: 'error', message: err.message || 'Erreur de paiement.' });
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
   return (
     <div className="relative w-full overflow-x-hidden bg-[#f8f9fa] font-sans text-gray-900">
       
       {/* Background Decor */}
       <div className="absolute top-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute top-[-10%] left-[20%] w-[50%] h-[50%] bg-gradient-to-br from-[#00f2ff]/20 to-[#0055ff]/10 rounded-full blur-[120px]" />
-        <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] bg-gradient-to-br from-blue-300/20 to-indigo-300/20 rounded-full blur-[120px]" />
+        <div className="absolute top-[-10%] left-[20%] w-[50%] h-[50%] bg-linear-to-br from-[#00f2ff]/20 to-[#0055ff]/10 rounded-full blur-[120px]" />
+        <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] bg-linear-to-br from-blue-300/20 to-indigo-300/20 rounded-full blur-[120px]" />
       </div>
 
       {/* Hero Section */}
@@ -45,7 +70,7 @@ export function LandingPage() {
             
             <h1 className="text-5xl sm:text-7xl md:text-[5.5rem] font-black tracking-tight mb-6 leading-[1.05] max-w-5xl text-gray-900">
               La caisse enregistreuse <br className="hidden md:block"/>
-              <span className="bg-gradient-to-br from-[#00f2ff] to-[#0055ff] bg-clip-text text-transparent">
+              <span className="bg-linear-to-br from-[#00f2ff] to-[#0055ff] bg-clip-text text-transparent">
                 sans compromis.
               </span>
             </h1>
@@ -99,7 +124,7 @@ export function LandingPage() {
                 },
             ].map((c, i) => (
                 <FadeIn key={c.title} delay={i * 0.15}>
-                    <div className={`rounded-3xl p-8 bg-gradient-to-br ${c.color} border ${c.border} h-full shadow-sm hover:shadow-md transition-shadow`}>
+                    <div className={`rounded-3xl p-8 bg-linear-to-br ${c.color} border ${c.border} h-full shadow-sm hover:shadow-md transition-shadow`}>
                         <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-6 shadow-sm border border-black/5">{c.icon}</div>
                         <h3 className="font-bold text-gray-900 text-xl mb-3 tracking-tight">{c.title}</h3>
                         <p className="text-gray-600 leading-relaxed text-sm font-medium">{c.desc}</p>
@@ -111,7 +136,7 @@ export function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-32 px-6 bg-gradient-to-b from-[#f8f9fa] to-white relative z-20">
+      <section id="pricing" className="py-32 px-6 bg-linear-to-b from-[#f8f9fa] to-white relative z-20">
         <div className="max-w-5xl mx-auto">
           <FadeIn className="text-center mb-20">
             <span className="inline-block px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-bold tracking-widest uppercase mb-6">Tarification simple</span>
@@ -122,7 +147,7 @@ export function LandingPage() {
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
             {/* SaaS Plan */}
             <FadeIn delay={0.1}>
-                <div className="bg-white rounded-[2rem] border-2 border-[#0055ff] shadow-2xl shadow-blue-500/10 relative overflow-hidden h-full flex flex-col translate-y-[-10px]">
+                <div className="bg-white rounded-4xl border-2 border-[#0055ff] shadow-2xl shadow-blue-500/10 relative overflow-hidden h-full flex flex-col translate-y-[-10px]">
                   <div className="absolute top-0 right-0 p-6">
                     <div className="text-[10px] font-bold uppercase tracking-widest text-[#0055ff] bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100">
                       Idéal TPE
@@ -145,7 +170,7 @@ export function LandingPage() {
                         "Support Prioritaire 7j/7"
                       ].map((feature, i) => (
                         <li key={i} className="flex items-start gap-4">
-                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center mt-0.5 border border-blue-100">
+                          <div className="shrink-0 w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center mt-0.5 border border-blue-100">
                             <CheckCircle2 className="w-4 h-4 text-[#0055ff]" />
                           </div>
                           <span className="text-gray-700 font-medium text-sm">{feature}</span>
@@ -154,7 +179,12 @@ export function LandingPage() {
                     </ul>
                   </div>
                   <div className="p-10 pt-0 mt-auto">
-                    <Button className="w-full font-bold rounded-xl bg-[#0055ff] text-white shadow-xl shadow-blue-500/20 py-6 text-sm uppercase tracking-wider hover:bg-[#0044cc]" size="lg">
+                    <Button
+                      onPress={() => handleSubscribe('monthly')}
+                      isLoading={loadingPlan === 'monthly'}
+                      className="w-full font-bold rounded-xl bg-[#0055ff] text-white shadow-xl shadow-blue-500/20 py-6 text-sm uppercase tracking-wider hover:bg-[#0044cc]"
+                      size="lg"
+                    >
                       Démarrer l'essai 14 Jours
                     </Button>
                   </div>
@@ -163,7 +193,7 @@ export function LandingPage() {
 
             {/* Lifetime Plan */}
             <FadeIn delay={0.2}>
-                <div className="bg-gray-50 rounded-[2rem] border border-gray-200 relative overflow-hidden h-full flex flex-col hover:border-gray-300 transition-colors">
+                <div className="bg-gray-50 rounded-4xl border border-gray-200 relative overflow-hidden h-full flex flex-col hover:border-gray-300 transition-colors">
                   <div className="p-10 pb-6 flex-1">
                     <h3 className="text-2xl font-bold text-gray-900">Licence Perpétuelle</h3>
                     <div className="flex items-baseline gap-2 mt-4 mb-6">
@@ -181,14 +211,19 @@ export function LandingPage() {
                         "Support Standard Email"
                       ].map((feature, i) => (
                         <li key={i} className="flex items-start gap-4">
-                          <CheckCircle2 className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                          <CheckCircle2 className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" />
                           <span className="text-gray-600 font-medium text-sm">{feature}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                   <div className="p-10 pt-0 mt-auto">
-                    <Button className="w-full font-bold rounded-xl py-6 text-sm uppercase tracking-wider bg-white border-2 border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm" size="lg">
+                    <Button
+                      onPress={() => handleSubscribe('lifetime')}
+                      isLoading={loadingPlan === 'lifetime'}
+                      className="w-full font-bold rounded-xl py-6 text-sm uppercase tracking-wider bg-white border-2 border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm"
+                      size="lg"
+                    >
                       Demander un devis
                     </Button>
                   </div>

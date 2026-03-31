@@ -7,7 +7,7 @@ export function LandingLayout() {
     <div className="min-h-screen bg-[#f8f9fa] text-gray-900 font-sans selection:bg-blue-500/30 overflow-x-hidden">
       {/* Navbar v3 style */}
       <nav className="fixed top-6 left-1/2 -translate-x-1/2 w-[92%] md:w-[80%] bg-white/70 backdrop-blur-md rounded-full px-6 md:px-8 py-4 flex items-center justify-between z-50 border border-black/5 shadow-xl">
-        <Link to="/" className="text-xl md:text-2xl font-black tracking-tight bg-gradient-to-br from-[#00f2ff] to-[#0055ff] text-transparent bg-clip-text transition-all hover:scale-105">
+        <Link to="/" className="text-xl md:text-2xl font-black tracking-tight bg-linear-to-br from-[#00f2ff] to-[#0055ff] text-transparent bg-clip-text transition-all hover:scale-105">
           OmniPOS
         </Link>
         <div className="hidden md:flex items-center gap-8 text-sm font-semibold tracking-wider uppercase text-blue-600/80">

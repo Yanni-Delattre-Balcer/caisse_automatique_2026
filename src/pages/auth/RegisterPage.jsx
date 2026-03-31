@@ -27,7 +27,7 @@ export function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      await register(formData.companyName, formData.email, formData.password, formData.domain);
+      await register(formData.email, formData.password, formData.companyName, formData.domain);
       navigate('/pos');
     } catch (err) {
       setError(err.message);
@@ -39,7 +39,7 @@ export function RegisterPage() {
     <div className="w-full">
       {/* Header */}
       <div className="flex justify-center items-end gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00f2ff] to-[#0055ff] flex items-center justify-center text-white text-xl shadow-md shadow-blue-500/20">
+          <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#00f2ff] to-[#0055ff] flex items-center justify-center text-white text-xl shadow-md shadow-blue-500/20">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
@@ -115,7 +115,7 @@ export function RegisterPage() {
         <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 mt-6 bg-gradient-to-r from-[#0055ff] to-[#0044cc] text-white rounded-xl font-bold text-lg shadow-lg shadow-blue-500/25 hover:shadow-xl hover:-translate-y-px transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full py-4 mt-6 bg-linear-to-r from-[#0055ff] to-[#0044cc] text-white rounded-xl font-bold text-lg shadow-lg shadow-blue-500/25 hover:shadow-xl hover:-translate-y-px transition-all disabled:opacity-60 disabled:cursor-not-allowed"
         >
             {loading ? 'Création en cours...' : 'Démarrer gratuitement'}
         </button>

@@ -39,7 +39,7 @@ export function DashboardLayout() {
       {/* Rail Sidebar */}
       <aside className="relative z-20 w-[72px] bg-white/70 dark:bg-[#1e1e1e]/70 backdrop-blur-md border-r border-gray-200 dark:border-white/10 shadow-sm flex flex-col items-center py-6 transition-colors duration-300">
         <div className="flex flex-col items-center mb-8 gap-1">
-          <div className="font-black text-transparent bg-clip-text bg-gradient-to-br from-[#00f2ff] to-[#0055ff] text-xs leading-tight text-center px-1 tracking-tight">
+          <div className="font-black text-transparent bg-clip-text bg-linear-to-br from-[#00f2ff] to-[#0055ff] text-xs leading-tight text-center px-1 tracking-tight">
             Omni<br/>POS
           </div>
         </div>
@@ -75,7 +75,7 @@ export function DashboardLayout() {
 
           {/* User & Logout */}
           <div className="flex flex-col items-center gap-3">
-            <div title={user.companyName} className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#00f2ff] to-[#0055ff] flex items-center justify-center text-white text-sm font-bold shadow-md shadow-blue-500/20">
+            <div title={user.companyName} className="w-10 h-10 rounded-full bg-linear-to-tr from-[#00f2ff] to-[#0055ff] flex items-center justify-center text-white text-sm font-bold shadow-md shadow-blue-500/20">
               {user.companyName.substring(0,2).toUpperCase()}
             </div>
             <button

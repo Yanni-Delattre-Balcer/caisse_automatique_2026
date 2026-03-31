@@ -1,10 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Caisse</title>
+
+    <!-- SEO -->
+    <title>OmniPOS — Caisse enregistreuse nouvelle génération</title>
+    <meta name="description" content="OmniPOS : la caisse enregistreuse SaaS moderne, offline-first, avec scanner WebRTC. Idéale pour TPE/PME : restauration, retail, beauté, services." />
+    <meta name="keywords" content="caisse enregistreuse, POS, SaaS, TPE, PME, offline, WebRTC, scanner, encaissement" />
+    <meta name="author" content="OmniPOS" />
+
+    <!-- Open Graph / Réseaux sociaux -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="OmniPOS — Caisse enregistreuse sans compromis" />
+    <meta property="og:description" content="Transformez votre smartphone en douchette ultra-rapide. Encaissez vos clients même sans connexion." />
+    <meta property="og:url" content="https://omnipos.fr" />
+
+    <!-- PWA -->
+    <meta name="theme-color" content="#0055ff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- QR Code Scanner -->
     <script
       src="https://unpkg.com/html5-qrcode"
       type="text/javascript"
@@ -27,7 +45,6 @@
           padding: 20px;
         "
       >
-        <!-- Titre retiré -->
         <div
           id="loading-spinner"
           style="
@@ -52,10 +69,10 @@
             line-height: 1.6;
           "
         >
-          ⚠️ Le chargement semble long.<br />
-          Vérifiez que votre téléphone est bien sur le
+          Le chargement semble long.<br />
+          Vérifiez que votre appareil est bien sur le
           <strong>même Wi-Fi</strong> que le PC.<br />
-          IP du PC suggérée:
+          IP du PC :
           <span id="suggested-ip" style="font-weight: bold; color: white"
             >...</span
           >

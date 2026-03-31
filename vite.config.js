@@ -12,7 +12,7 @@ export default defineConfig({
   server: {
     host: true,
     https: true,
-    port: 5175,
+    port: 5177,
     strictPort: true,
   },
   resolve: {

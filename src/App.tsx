@@ -13,8 +13,10 @@ import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { PosPage } from './pages/PosPage';
-import { RemoteScannerView } from './features/scanner/RemoteScannerView';
 import { DashboardPage } from './pages/DashboardPage';
+import { InventoryPage } from './pages/InventoryPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { RemoteScannerView } from './features/scanner/RemoteScannerView';
 
 export default function App() {
   const initializeAuth = useAuthStore((state) => state.initialize);
@@ -49,9 +51,9 @@ export default function App() {
       <Route element={<DashboardLayout />}>
         <Route path="/pos" element={<PosPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/inventory" element={<div className="flex items-center justify-center h-full text-gray-500 font-medium text-lg">Inventaire (En cours de construction...)</div>} />
+        <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/scanner-setup" element={<RemoteScannerView />} />
-        <Route path="/settings" element={<div className="flex items-center justify-center h-full text-gray-500 font-medium text-lg">Paramètres du commerce (En cours de construction...)</div>} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
     </Routes>
   );
