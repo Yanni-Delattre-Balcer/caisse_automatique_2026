@@ -32,7 +32,7 @@ export function LoginPage() {
               </svg>
           </div>
           <div className="font-sans font-bold text-2xl text-gray-900 uppercase tracking-wide">
-              Omni<span className="text-[#0055ff]">POS</span>
+              Heryze
           </div>
       </div>
 
@@ -87,7 +87,7 @@ export function LoginPage() {
             type="button"
             onClick={() => {
                 useAuthStore.getState().loginAsDemo();
-                navigate('/pos');
+                navigate('/pos/quick');
             }}
             className="w-full py-4 border-2 border-gray-100 hover:border-blue-500/30 hover:bg-blue-50/30 text-gray-700 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 group"
         >

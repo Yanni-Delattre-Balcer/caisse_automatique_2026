@@ -119,7 +119,7 @@ export function DashboardPage() {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(exportData);
     XLSX.utils.book_append_sheet(wb, ws, 'Export_Comptable');
-    XLSX.writeFile(wb, `omnipos_export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.writeFile(wb, `heryze_export_${new Date().toISOString().slice(0, 10)}.xlsx`);
     addToast({ type: 'success', message: 'Export comptable téléchargé.' });
   };
 

@@ -1,63 +1,224 @@
-# 🧪 Scénarios de Test : Validation Migration Supabase
+# 🧪 Scénarios de Test — Heryze MVP (Pré-Bêta)
 
-Ce document détaille les tests critiques à réaliser pour valider l'implémentation de la couche de données Supabase et de la résilience offline.
+> **Date de mise à jour** : 2026-04-05  
+> **Comment tester** : Lancer `npm run dev`, ouvrir `https://localhost:5177` (HTTPS requis pour PWA/caméra).  
+> **Testeurs** : Deux navigateurs / deux comptes suffisent pour les tests multi-tenant.
 
 ---
 
-## 🔐 1. Authentification & Multi-tenant
-**Objectif** : Vérifier que les données sont hermétiquement isolées entre les commerçants.
+## ✅ État du MVP — Ce qui est implémenté
 
-| Étape | Action | Résultat Attendu |
+| Fonctionnalité | Page | État |
 | :--- | :--- | :--- |
-| 1.1 | Créer deux comptes distincts (A et B). | Les deux comptes sont créés dans `auth.users`. |
-| 1.2 | Login avec le Compte A et ajouter un produit "Pomme". | Le produit est visible dans le catalogue du Compte A. |
-| 1.3 | Logout A, Login avec le Compte B. | Le catalogue du Compte B est vide (ou contient ses propres produits). |
-| 1.4 | Rechercher "Pomme" dans le catalogue B. | **Aucun résultat**. Étanchéité RLS confirmée. |
+| Authentification (inscription/connexion) | `/login`, `/register` | ✅ |
+| Mode Démo (données fictives, sans compte) | Bouton sur landing & login | ✅ |
+| Caisse Rapide (12 produits favoris, tactile) | `/pos/quick` | ✅ |
+| Caisse Complète (catalogue entier) | `/pos` | ✅ |
+| Paiement CB / Espèces avec rendu monnaie | CheckoutCart | ✅ |
+| Ticket numérique QR Code après vente | CheckoutCart (modale post-paiement) | ✅ |
+| Page ticket publique (lien scannable) | `/receipt/:id` | ✅ |
+| Inventaire CRUD + Import CSV | `/inventory` | ✅ |
+| Dashboard Analytiques + Export Excel | `/dashboard` | ✅ |
+| Z-Caisse journalière | `/z-caisse` | ✅ |
+| Offline-First (ventes en file IndexedDB) | Automatique | ✅ |
+| Sync temps réel Supabase (Realtime) | Automatique | ✅ |
+| Indicateur de connexion (Wifi/Sync) | Sidebar | ✅ |
+| Badge stock bas (≤ 5 unités) | Icône Inventaire sidebar | ✅ |
+| Dark Mode | Sidebar | ✅ |
+| PWA installable sur mobile | Via navigateur | ✅ |
+| Scanner Smartphone (WebRTC) | `/scanner-setup` | ✅ |
+| Page Tarifs | `/pricing` | ✅ |
+| Paramètres | `/settings` | ✅ |
+| Isolation données multi-tenant (RLS) | Automatique | ✅ |
+
+**⚠️ Non encore implémenté :**
+- Raccourcis clavier (`/` chercher, `Entrée` payer, `Esc` annuler)
+- Page Tables de restauration (`/tables` — nav visible mais route absente)
+- Export Z-Caisse au format PDF
+- Chaînage cryptographique NF525
 
 ---
 
-## 🔄 2. Synchronisation Temps Réel (Realtime)
-**Objectif** : Vérifier que les stocks et produits se mettent à jour instantanément sur plusieurs terminaux.
+## 🎯 0. Avant de commencer — Setup
 
-| Étape | Action | Résultat Attendu |
+```
+1. Copier .env.example → .env et renseigner les clés Supabase
+   (ou tester uniquement le mode Démo si pas de projet Supabase)
+2. npm install && npm run dev
+3. Ouvrir https://localhost:5177
+4. Accepter l'avertissement de certificat auto-signé (normal en dev)
+```
+
+---
+
+## 🟣 1. Mode Démo (Sans compte — à tester en premier)
+
+> Valide le parcours "découverte" pour un visiteur non inscrit.
+
+| # | Action | Résultat attendu |
 | :--- | :--- | :--- |
-| 2.1 | Ouvrir l'app sur deux terminaux (PC + Mobile) avec le même compte. | Les deux affichent le même catalogue. |
-| 2.2 | Sur le PC, changer le prix d'un produit. | Le prix change **instantanément** sur le mobile sans rafraîchir. |
-| 2.3 | Sur le Mobile, modifier le stock d'un produit. | La valeur du stock est mise à jour sur le PC en temps réel. |
+| 1.1 | Aller sur `/` (landing page) et cliquer **"Démo"** dans la navbar | Redirige vers `/pos/quick` avec 8 produits boulangerie pré-chargés |
+| 1.2 | OU aller sur `/login` et cliquer **"Accéder au Mode Démo"** | Même résultat |
+| 1.3 | Vérifier la sidebar | Badge "Boulangerie Louise", indicateur vert en ligne |
+| 1.4 | Naviguer entre toutes les pages (Analytiques, Inventaire, Z-Caisse...) | Aucun crash, données de démo présentes partout |
+| 1.5 | Rafraîchir la page (`F5`) en étant sur `/pos/quick` | **L'app reste en mode démo**, pas de redirection vers login |
+| 1.6 | Se déconnecter (icône LogOut) | Retour sur `/` |
 
 ---
 
-## 📶 3. Résilience Offline (Mode Avion)
-**Objectif** : Valider que l'encaissement reste possible sans réseau.
+## 💳 2. Flux d'Encaissement de Base — Caisse Rapide
 
-| Étape | Action | Résultat Attendu |
+> Scénario nominal : une vente simple et rapide.
+
+| # | Action | Résultat attendu |
 | :--- | :--- | :--- |
-| 3.1 | Passer en **Mode Avion** (déconnexion complète). | L'UI doit rester fluide (Offline-First). |
-| 3.2 | Réaliser une vente complète avec deux produits. | Le panier se vide, un reçu s'affiche (simulé). |
-| 3.3 | Vérifier IndexedDB (Inspecteur Browser > Application). | La vente est présente dans la file d'attente `offline_sale_...`. |
-| 3.4 | Désactiver le Mode Avion / Rétablir la connexion. | L'app détecte le réseau et vide la file d'attente. |
-| 3.5 | Vérifier le Dashboard Supabase. | La vente est apparue dans la table `sales` avec le bon timestamp. |
+| 2.1 | Ouvrir `/pos/quick` | Grille de 8 produits (ou 12 max) avec prix en grand |
+| 2.2 | Cliquer sur **"Pain au Chocolat"** | Apparaît dans le panier à droite, quantité 1 |
+| 2.3 | Cliquer à nouveau sur le même produit | Quantité passe à 2, total mis à jour |
+| 2.4 | Cliquer sur **"+"** dans le panier | Quantité 3 |
+| 2.5 | Cliquer sur **"−"** jusqu'à 0 | L'article disparaît du panier |
+| 2.6 | Ajouter 3 produits différents | Le total TTC s'affiche correctement |
+| 2.7 | Cliquer **"Annuler la commande"** | Modale de confirmation apparaît |
+| 2.8 | Confirmer l'annulation | Panier vide, toast "Commande annulée" |
 
 ---
 
-## 📉 4. Intégrité des Stocks (CSR-First)
-**Objectif** : Vérifier que le calcul du stock après vente est correct.
+## 💵 3. Paiement — CB, Espèces, Ticket QR
 
-| Étape | Action | Résultat Attendu |
+### 3a. Paiement CB
+
+| # | Action | Résultat attendu |
 | :--- | :--- | :--- |
-| 4.1 | Noter le stock d'un produit (ex: 10 unités). | - |
-| 4.2 | Vendre 3 unités du même produit. | - |
-| 4.3 | Vérifier immédiatement le catalogue. | Le stock affiche **7 unités**. |
-| 4.4 | Vérifier dans Supabase (Table `products`). | `stock_quantity` est bien à 7. |
+| 3.1 | Ajouter des produits, cliquer **"C.B"** | Modale de reçu s'affiche avec récapitulatif + QR code |
+| 3.2 | Vérifier le QR code | Scanner avec smartphone → ouvre `/receipt/:id` dans le navigateur |
+| 3.3 | Cliquer **"Fermer le reçu"** | Modale ferme, panier vide, prêt pour nouvelle vente |
+
+### 3b. Paiement Espèces avec rendu monnaie
+
+| # | Action | Résultat attendu |
+| :--- | :--- | :--- |
+| 3.4 | Ajouter des produits (ex: total = 5,60 €), cliquer **"Espèces"** | Modale rendu monnaie apparaît |
+| 3.5 | Saisir **10,00** dans "Montant remis" | Affiche en vert "Monnaie à rendre : 4,40 €" |
+| 3.6 | Saisir **4,00** (insuffisant) | Affiche en rouge "Montant insuffisant", bouton Valider grisé |
+| 3.7 | Corriger à 6,00, cliquer **"Valider le paiement"** | Vente enregistrée, reçu + QR code affiché |
 
 ---
 
-## 📱 5. Expérience Mobile & PWA
-**Objectif** : S'assurer que l'installation et l'usage mobile sont optimaux.
+## 📶 4. Résilience Offline (Mode Avion)
 
-- [ ] L'application peut être ajoutée à l'écran d'accueil (PWA).
-- [ ] Le scanner de code-barre (via caméra) fonctionne sans latence.
-- [ ] L'interface s'adapte correctement au format portrait/paysage.
+> Test critique avant bêta.
+
+| # | Action | Résultat attendu |
+| :--- | :--- | :--- |
+| 4.1 | Activer le **mode avion** (ou couper le WiFi) | Icône WifiOff rouge apparaît dans la sidebar |
+| 4.2 | Réaliser une vente complète (2 produits, paiement CB) | Vente s'enregistre normalement, toast succès |
+| 4.3 | Ouvrir l'Inspecteur navigateur → Application → IndexedDB | Une clé `offline_sale_...` est présente avec les données de la vente |
+| 4.4 | Réactiver la connexion | L'icône passe en orange animé ("Synchronisation..."), puis vert |
+| 4.5 | Vérifier Supabase Dashboard → Table `sales` | La vente est apparue avec le bon timestamp |
+| 4.6 | Vérifier IndexedDB | La clé `offline_sale_...` a été supprimée |
 
 ---
-*Ce scénario doit être exécuté après chaque modification majeure des stores Zustand.*
+
+## 📦 5. Inventaire & Catalogue
+
+### 5a. Ajout manuel
+
+| # | Action | Résultat attendu |
+| :--- | :--- | :--- |
+| 5.1 | Aller sur `/inventory`, cliquer **"Ajouter un produit"** | Modale s'ouvre |
+| 5.2 | Saisir : Nom="Test Produit", Prix HT=8,00, TVA=20% | Prix TTC estimé affiché : 9,60 € |
+| 5.3 | Valider | Produit apparaît dans la liste, également visible dans la Caisse |
+| 5.4 | Modifier le produit (icône crayon) | Les valeurs sont pré-remplies, modification sauvegardée |
+| 5.5 | Mettre le stock à **3** | Le badge rouge apparaît sur l'icône Inventaire dans la sidebar |
+| 5.6 | Supprimer le produit | Confirmation, produit retiré du catalogue et de la caisse |
+
+### 5b. Import CSV
+
+| # | Action | Résultat attendu |
+| :--- | :--- | :--- |
+| 5.7 | Créer un fichier CSV : `nom;prix_ht;tva;catégorie;stock;code-barre` | — |
+| 5.8 | Cliquer **"Importer CSV"**, sélectionner le fichier | Aperçu avec le nombre de produits détectés |
+| 5.9 | Confirmer l'import | Toast de succès, produits visibles dans le catalogue |
+
+---
+
+## 📊 6. Analytiques & Z-Caisse
+
+| # | Action | Résultat attendu |
+| :--- | :--- | :--- |
+| 6.1 | Aller sur `/dashboard` (en mode démo) | Chiffres fictifs (CA 1 204,50€, 42 ventes), graphique hebdomadaire |
+| 6.2 | Cliquer **"Export Comptable"** | Téléchargement d'un fichier `.xlsx` avec les ventes |
+| 6.3 | Aller sur `/z-caisse` | Récapitulatif du jour : CA, ventilation CB/Espèces, panier moyen |
+| 6.4 | Cliquer l'icône de téléchargement Z-Caisse | Fichier CSV/export généré |
+
+---
+
+## 🔐 7. Authentification & Multi-tenant (Nécessite Supabase configuré)
+
+| # | Action | Résultat attendu |
+| :--- | :--- | :--- |
+| 7.1 | Créer deux comptes : **Boulangerie A** et **Épicerie B** | Deux entrées dans `auth.users` |
+| 7.2 | Avec A, ajouter un produit "Baguette" | Visible dans le catalogue de A |
+| 7.3 | Se déconnecter, se connecter avec B | Le catalogue B est vide (ou contient ses propres produits) |
+| 7.4 | Rechercher "Baguette" dans le catalogue B | **Aucun résultat** — isolation RLS confirmée |
+| 7.5 | Ouvrir l'app sur deux onglets avec le même compte A | Modifier un prix dans l'onglet 1 → se met à jour **instantanément** dans l'onglet 2 |
+
+---
+
+## 📱 8. PWA & Mobile
+
+| # | Action | Résultat attendu |
+| :--- | :--- | :--- |
+| 8.1 | Ouvrir l'app sur mobile (Chrome/Safari) | Interface s'adapte à l'écran |
+| 8.2 | Sur Android Chrome : menu "Ajouter à l'écran d'accueil" | L'app s'installe avec l'icône Heryze bleue |
+| 8.3 | Lancer depuis l'écran d'accueil | Ouvre en mode standalone (sans barre navigateur) sur `/pos/quick` |
+| 8.4 | Tester la Caisse Rapide sur mobile | Les boutons sont larges, cliquables facilement au doigt |
+| 8.5 | Aller sur `/scanner-setup` | Instructions pour connecter un smartphone comme scanner |
+
+---
+
+## 🐛 9. Régressions à vérifier
+
+> Points qui ont déjà posé problème — à re-tester systématiquement.
+
+| # | Scénario | Ce qu'on vérifie |
+| :--- | :--- | :--- |
+| R.1 | Cliquer "Mode Démo" depuis la page Login | **Pas de boucle infinie** "Maximum update depth exceeded" (bug corrigé le 05/04) |
+| R.2 | Rafraîchir la page en mode démo | Le mode démo **persiste** (pas de redirection login) |
+| R.3 | Cliquer sur "Tables" dans la sidebar (domaine Restauration) | Route inexistante → page blanche ou 404 (bug connu, non bloquant) |
+| R.4 | Ajouter 50 produits au catalogue en mode démo | Le badge stock bas se met à jour correctement sans re-render infini |
+
+---
+
+## 🚦 Checklist "Go/No-Go" pour la Bêta
+
+### Go obligatoire (bloquant) ✅
+- [ ] Flux complet de vente sans erreur console (R.1 corrigé)
+- [ ] Offline-First fonctionnel : vente hors ligne → sync automatique à la reconnexion
+- [ ] Mode Démo accessible et stable (landing + login)
+- [ ] Ticket QR Code scannable par le client
+- [ ] Import CSV opérationnel
+- [ ] Export comptable Excel lisible
+
+### Go souhaitable (non bloquant)
+- [ ] PWA installable sur iOS et Android
+- [ ] Scanner smartphone : 10 scans consécutifs sans latence
+- [ ] Z-Caisse : chiffres cohérents avec les ventes de la journée
+- [ ] Responsive tablette vérifié (iPad portrait/paysage)
+- [ ] Raccourcis clavier (`/` chercher, `Entrée` payer, `Esc` annuler) — **à implémenter**
+- [ ] Route `/tables` implémentée ou retirée de la sidebar — **à décider**
+
+---
+
+## 📋 Bugs connus / À ne pas oublier pour la bêta
+
+| Priorité | Problème | Fichier concerné |
+| :--- | :--- | :--- |
+| 🔴 Corrigé | Boucle infinie en mode démo | `DashboardLayout.jsx`, `useAuthStore.ts` |
+| 🟡 Moyen | Route `/tables` absente (lien mort pour Restauration) | `App.tsx` |
+| 🟡 Moyen | Raccourcis clavier non implémentés | — |
+| 🟢 Faible | `import React` inutilisé dans DashboardLayout (JSX transform) | `DashboardLayout.jsx` |
+
+---
+
+*Dernière mise à jour : 2026-04-05 — Bug mode démo résolu, PWA configurée, MVP fonctionnel.*

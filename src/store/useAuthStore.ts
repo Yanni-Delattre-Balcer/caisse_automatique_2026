@@ -43,7 +43,8 @@ export const useAuthStore = create<AuthState>()(
         supabase.auth.onAuthStateChange(async (_event, session) => {
           if (session?.user) {
             await get()._hydrateUserFromSession(session.user);
-          } else {
+          } else if (!get().isDemo) {
+            // Ne pas écraser le mode démo — la session Supabase est vide en mode démo par design
             set({ user: null, isAuthenticated: false, isDemo: false });
           }
         });
@@ -134,7 +135,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: {
             id: 'demo-user-id',
-            email: 'demo@omnipos.com',
+            email: 'demo@heryze.com',
             companyName: 'Boulangerie Louise',
             businessDomain: 'Restauration',
             businessId: 'demo-business-id',

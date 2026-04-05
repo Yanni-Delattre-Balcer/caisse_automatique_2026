@@ -2,25 +2,41 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- SEO -->
-    <title>OmniPOS — Caisse enregistreuse nouvelle génération</title>
-    <meta name="description" content="OmniPOS : la caisse enregistreuse SaaS moderne, offline-first, avec scanner WebRTC. Idéale pour TPE/PME : restauration, retail, beauté, services." />
-    <meta name="keywords" content="caisse enregistreuse, POS, SaaS, TPE, PME, offline, WebRTC, scanner, encaissement" />
-    <meta name="author" content="OmniPOS" />
+    <title>Heryze — Caisse enregistreuse nouvelle génération</title>
+    <meta name="description" content="Heryze : la caisse enregistreuse SaaS moderne, offline-first, avec scanner WebRTC. Idéale pour TPE/PME : restauration, retail, beauté, services." />
+    <meta name="keywords" content="caisse enregistreuse, POS, SaaS, TPE, PME, offline, WebRTC, scanner, encaissement, Heryze" />
+    <meta name="author" content="Heryze" />
 
     <!-- Open Graph / Réseaux sociaux -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="OmniPOS — Caisse enregistreuse sans compromis" />
+    <meta property="og:title" content="Heryze — Caisse enregistreuse sans compromis" />
     <meta property="og:description" content="Transformez votre smartphone en douchette ultra-rapide. Encaissez vos clients même sans connexion." />
-    <meta property="og:url" content="https://omnipos.fr" />
+    <meta property="og:url" content="https://heryze.fr" />
 
     <!-- PWA -->
     <meta name="theme-color" content="#0055ff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Heryze" />
+    <!-- Icône iOS (nécessaire pour "Ajouter à l'écran d'accueil" sur Safari/iPhone) -->
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <!-- Restauration de l'URL après la redirection 404 de GitHub Pages (SPA trick) -->
+    <script>
+      (function(l) {
+        if (l.search[1] === '/' ) {
+          var decoded = l.search.slice(1).split('&').map(function(s) {
+            return s.replace(/~and~/g, '&');
+          }).join('?');
+          window.history.replaceState(null, null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }(window.location));
+    </script>
 
     <!-- QR Code Scanner -->
     <script

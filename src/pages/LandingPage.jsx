@@ -1,11 +1,13 @@
 import React, { useRef, useState } from 'react';
 import { Button, Card } from '@heroui/react';
 import { Smartphone, Zap, Cloud, CheckCircle2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { useToastStore } from '../store/useToastStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 function FadeIn({ children, delay = 0, className = '' }) {
+    const navigate = useNavigate();
     const ref = useRef(null);
     const inView = useInView(ref, { once: true, margin: '-80px' });
     return (
@@ -83,7 +85,16 @@ export function LandingPage() {
               <Link to="/register" className="bg-[#0055ff] text-white px-8 py-4 rounded-full font-bold tracking-wider uppercase text-sm shadow-xl shadow-blue-500/30 hover:bg-[#0044cc] hover:-translate-y-1 transition-all text-center">
                   Démarrer gratuitement
               </Link>
-              <a href="#pricing" className="border border-gray-200 text-gray-700 bg-white/50 backdrop-blur-sm px-8 py-4 rounded-full font-bold tracking-wider uppercase text-sm hover:border-[#0055ff] hover:text-[#0055ff] transition-all text-center focus:outline-none focus:ring-2 focus:ring-[#0055ff]/50 cursor-pointer">
+              <button
+                onClick={() => {
+                    useAuthStore.getState().loginAsDemo();
+                    navigate('/pos/quick');
+                }}
+                className="border border-gray-200 text-gray-700 bg-white/50 backdrop-blur-sm px-8 py-4 rounded-full font-bold tracking-wider uppercase text-sm hover:border-[#0055ff] hover:text-[#0055ff] transition-all text-center focus:outline-none focus:ring-2 focus:ring-[#0055ff]/50 cursor-pointer"
+              >
+                  Tester la démo
+              </button>
+              <a href="#pricing" className="text-gray-400 px-4 py-4 rounded-full font-bold tracking-wider uppercase text-xs hover:text-gray-600 transition-all text-center">
                   Voir nos tarifs
               </a>
             </div>
@@ -94,7 +105,7 @@ export function LandingPage() {
       <section id="features" className="py-24 px-6 bg-white relative z-20 border-y border-gray-100">
         <div className="max-w-6xl mx-auto">
           <FadeIn className="text-center mb-16">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-500 text-xs font-bold tracking-widest uppercase mb-6">Pourquoi OmniPOS ?</span>
+            <span className="inline-block px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-500 text-xs font-bold tracking-widest uppercase mb-6">Pourquoi Heryze ?</span>
             <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">Oubliez les installations complexes.</h2>
             <p className="mt-4 text-gray-500 text-lg max-w-2xl mx-auto font-medium">Une plateforme unique, sans matériel propriétaire hors de prix.</p>
           </FadeIn>

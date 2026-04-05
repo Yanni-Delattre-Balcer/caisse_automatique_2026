@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Heryze</title>
+  <!--
+    Astuce SPA pour GitHub Pages.
+    Quand GitHub Pages reçoit une URL comme /caisse_automatique_2026/pos/quick,
+    il renvoie un 404 car le fichier n'existe pas.
+    Ce script redirige vers index.html en encodant le chemin dans la query string,
+    puis index.html le décode et restaure l'URL correcte via history.replaceState.
+    Source : https://github.com/rafgraph/spa-github-pages
+  -->
+  <script>
+    var pathSegmentsToKeep = 1; // 1 pour les "project sites" (sous-répertoire du repo)
+    var l = window.location;
+    l.replace(
+      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+      l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+      l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+      (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+      l.hash
+    );
+  </script>
+</head>
+<body></body>
+</html>

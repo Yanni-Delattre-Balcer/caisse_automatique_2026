@@ -10,9 +10,14 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 
 // Pages
 import { LandingPage } from './pages/LandingPage';
+import { LandingPageV2 } from './pages/LandingPageV2';
+import { PricingPage } from './pages/PricingPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { PosPage } from './pages/PosPage';
+import { QuickPosPage } from './pages/QuickPosPage';
+import { ZCaissePage } from './pages/ZCaissePage';
+import { ReceiptPage } from './pages/ReceiptPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { InventoryPage } from './pages/InventoryPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -22,12 +27,8 @@ export default function App() {
   const initializeAuth = useAuthStore((state) => state.initialize);
   const syncOfflineQueue = useCartStore((state) => state.syncOfflineQueue);
 
-  // Restaurer la session Supabase au démarrage de l'app
-  useEffect(() => {
-    initializeAuth();
-  }, [initializeAuth]);
+  useEffect(() => { initializeAuth(); }, [initializeAuth]);
 
-  // Synchroniser les ventes offline dès que le réseau revient
   useEffect(() => {
     syncOfflineQueue();
     window.addEventListener('online', syncOfflineQueue);
@@ -39,7 +40,12 @@ export default function App() {
       {/* Vitrine Commerciale */}
       <Route element={<LandingLayout />}>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/v2" element={<LandingPageV2 />} />
+        <Route path="/pricing" element={<PricingPage />} />
       </Route>
+
+      {/* Ticket public — sans authentification */}
+      <Route path="/receipt/:saleId" element={<ReceiptPage />} />
 
       {/* Authentification */}
       <Route element={<AuthLayout />}>
@@ -49,7 +55,9 @@ export default function App() {
 
       {/* Interface POS (Caissiers & Admins) */}
       <Route element={<DashboardLayout />}>
+        <Route path="/pos/quick" element={<QuickPosPage />} />
         <Route path="/pos" element={<PosPage />} />
+        <Route path="/z-caisse" element={<ZCaissePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/scanner-setup" element={<RemoteScannerView />} />

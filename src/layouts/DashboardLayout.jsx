@@ -1,36 +1,69 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ShoppingCart, Package, Settings, Smartphone, Utensils, LogOut, Sun, Moon, Search } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Package, Settings, Smartphone, Utensils, LogOut, Sun, Moon, Search, Zap, BarChart3, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { useAuthStore } from '../store/useAuthStore';
 import { useCatalogStore } from '../store/useCatalogStore';
 import { useConfigStore } from '../store/useConfigStore';
+import { useCartStore } from '../store/useCartStore';
 
 export function DashboardLayout() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isDemo, loginAsDemo, logout } = useAuthStore();
   const hydrateForDomain = useCatalogStore(state => state.hydrateForDomain);
+  const lowStockCount = useCatalogStore(state =>
+    state.items.reduce((n, i) => n + (i.stock !== null && i.stock <= 5 ? 1 : 0), 0)
+  );
   const { theme, toggleTheme } = useConfigStore();
+  const syncOfflineQueue = useCartStore(state => state.syncOfflineQueue);
 
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Sync & online status
+  useEffect(() => {
+    const handleOnline = async () => {
+      setIsOnline(true);
+      setIsSyncing(true);
+      await syncOfflineQueue().catch(() => {});
+      setIsSyncing(false);
+    };
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [syncOfflineQueue]);
+
+  // Garde d'authentification — redirige ou active le mode démo via URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('demo') === 'true' && !isDemo) {
       loginAsDemo();
     } else if (!isAuthenticated && params.get('demo') !== 'true') {
       navigate('/login');
-    } else if (user?.businessDomain) {
+    }
+  }, [isAuthenticated, isDemo, navigate, loginAsDemo]);
+
+  // Hydratation du catalogue — uniquement quand le domaine métier change
+  useEffect(() => {
+    if (user?.businessDomain) {
       hydrateForDomain(user.businessDomain);
     }
-  }, [isAuthenticated, isDemo, navigate, user, hydrateForDomain, loginAsDemo]);
+  }, [user?.businessDomain, hydrateForDomain]);
 
   if (!isAuthenticated || !user) return null;
 
   const baseNavItems = [
-    { name: "Caisse", path: "/pos", icon: <ShoppingCart className="w-5 h-5" /> },
+    { name: "Caisse Rapide", path: "/pos/quick", icon: <Zap className="w-5 h-5" /> },
+    { name: "Caisse Complète", path: "/pos", icon: <ShoppingCart className="w-5 h-5" /> },
     { name: "Analytiques", path: "/dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
-    { name: "Inventaire", path: "/inventory", icon: <Package className="w-5 h-5" /> },
+    { name: "Inventaire", path: "/inventory", icon: <Package className="w-5 h-5" />, badge: lowStockCount },
     // Only show "Gestion des Tables" if domain is Restauration
     ...(user.businessDomain === "Restauration" ? [{ name: "Tables", path: "/tables", icon: <Utensils className="w-5 h-5" /> }] : []),
     { name: "Scanner Mobile", path: "/scanner-setup", icon: <Smartphone className="w-5 h-5" /> },
+    { name: "Z-Caisse", path: "/z-caisse", icon: <BarChart3 className="w-5 h-5" /> },
     { name: "Paramètres", path: "/settings", icon: <Settings className="w-5 h-5" /> },
   ];
 
@@ -40,7 +73,7 @@ export function DashboardLayout() {
       <aside className="relative z-20 w-[72px] bg-white/70 dark:bg-[#1e1e1e]/70 backdrop-blur-md border-r border-gray-200 dark:border-white/10 shadow-sm flex flex-col items-center py-6 transition-colors duration-300">
         <div className="flex flex-col items-center mb-8 gap-1">
           <div className="font-black text-transparent bg-clip-text bg-linear-to-br from-[#00f2ff] to-[#0055ff] text-xs leading-tight text-center px-1 tracking-tight">
-            Omni<br/>POS
+            Heryze
           </div>
         </div>
 
@@ -51,7 +84,7 @@ export function DashboardLayout() {
               to={item.path}
               title={item.name}
               className={({ isActive }) =>
-                `flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-200 ${
+                `relative flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-200 ${
                   isActive
                     ? "bg-blue-50 dark:bg-[#0055ff]/10 text-[#0055ff] shadow-sm ring-1 ring-[#0055ff]/20"
                     : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5"
@@ -59,11 +92,29 @@ export function DashboardLayout() {
               }
             >
               {item.icon}
+              {/* Badge stock bas */}
+              {item.badge > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[9px] font-black flex items-center justify-center shadow-sm">
+                  {item.badge > 9 ? '9+' : item.badge}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
 
         <div className="flex flex-col items-center gap-4 mt-auto">
+          {/* Sync Indicator */}
+          <div title={isOnline ? (isSyncing ? 'Synchronisation...' : 'En ligne') : 'Hors ligne'}
+            className="flex items-center justify-center w-10 h-10 rounded-full">
+            {!isOnline ? (
+              <WifiOff className="w-4 h-4 text-red-400" />
+            ) : isSyncing ? (
+              <RefreshCw className="w-4 h-4 text-amber-400 animate-spin" />
+            ) : (
+              <Wifi className="w-4 h-4 text-green-500" />
+            )}
+          </div>
+
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}

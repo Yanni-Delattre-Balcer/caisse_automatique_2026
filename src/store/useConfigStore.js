@@ -7,7 +7,7 @@ export const useConfigStore = create(
       businessMode: 'retail', // 'retail', 'snack', 'service'
       cashierName: 'Admin',
       taxRates: [20, 10, 5.5, 2.1], // Standard French VAT rates
-      businessName: 'OmniPOS Demo',
+      businessName: 'Heryze Demo',
       theme: 'dark',
 
       setBusinessMode: (mode) => set({ businessMode: mode }),
@@ -17,7 +17,7 @@ export const useConfigStore = create(
       toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
     }),
     {
-      name: 'omnipos-config', // Persisted in localStorage
+      name: 'heryze-config', // Persisted in localStorage
     }
   )
 );

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Card } from '@heroui/react';
-import { Plus, Pencil, Trash2, Package, Search, X, Save } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, Search, X, Save, Upload, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCatalogStore } from '../store/useCatalogStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -27,6 +27,9 @@ export function InventoryPage() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_PRODUCT);
   const [saving, setSaving] = useState(false);
+  const [csvPreview, setCsvPreview] = useState(null);  // tableau de lignes parsées
+  const [showCsvModal, setShowCsvModal] = useState(false);
+  const [csvImporting, setCsvImporting] = useState(false);
 
   const filteredItems = items.filter(
     (item) =>
@@ -134,6 +137,56 @@ export function InventoryPage() {
     }
   };
 
+  // ── Import CSV ─────────────────────────────────
+  const handleCsvFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target.result;
+      const lines = text.split('\n').filter(l => l.trim());
+      // Support CSV avec ; ou ,
+      const sep = lines[0]?.includes(';') ? ';' : ',';
+      // Ignorer la 1ère ligne si c'est un en-tête
+      const dataLines = lines[0]?.toLowerCase().includes('nom') ? lines.slice(1) : lines;
+      const parsed = dataLines.map(line => {
+        const parts = line.split(sep).map(p => p.trim().replace(/^"|"$/g, ''));
+        return {
+          name: parts[0] || '',
+          price_ht: parseFloat(parts[1]) || 0,
+          tva_rate: parseFloat(parts[2]) || 20,
+          category: parts[3] || 'Divers',
+          stock: parseInt(parts[4]) || 0,
+          barcode: parts[5] || null,
+        };
+      }).filter(p => p.name && p.price_ht > 0);
+      setCsvPreview(parsed);
+      setShowCsvModal(true);
+    };
+    reader.readAsText(file, 'UTF-8');
+    // Reset l'input pour permettre de re-sélectionner le même fichier
+    e.target.value = '';
+  };
+
+  const handleCsvImport = async () => {
+    if (!csvPreview?.length) return;
+    setCsvImporting(true);
+    let imported = 0;
+    try {
+      for (const product of csvPreview) {
+        await addItem(product);
+        imported++;
+      }
+      addToast({ type: 'success', message: `${imported} produit(s) importé(s) avec succès.` });
+      setShowCsvModal(false);
+      setCsvPreview(null);
+    } catch (err) {
+      addToast({ type: 'error', message: `Erreur import : ${err.message}` });
+    } finally {
+      setCsvImporting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 h-full p-2 max-w-6xl mx-auto">
       {/* Header */}
@@ -144,13 +197,23 @@ export function InventoryPage() {
           </h1>
           <p className="text-zinc-500 font-medium">{items.length} produit(s) au catalogue</p>
         </div>
-        <Button
-          onPress={openAdd}
-          className="bg-[#0055ff] text-white font-bold rounded-xl shadow-lg shadow-blue-500/20"
-          startContent={<Plus className="w-4 h-4" />}
-        >
-          Ajouter un produit
-        </Button>
+        <div className="flex gap-3">
+          {/* Import CSV */}
+          <label className="cursor-pointer">
+            <input type="file" accept=".csv,.txt" className="hidden" onChange={handleCsvFile} />
+            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-xl text-sm transition-colors">
+              <Upload className="w-4 h-4" />
+              Importer CSV
+            </span>
+          </label>
+          <Button
+            onPress={openAdd}
+            className="bg-[#0055ff] text-white font-bold rounded-xl shadow-lg shadow-blue-500/20"
+            startContent={<Plus className="w-4 h-4" />}
+          >
+            Ajouter un produit
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -353,6 +416,75 @@ export function InventoryPage() {
                   className="bg-[#0055ff] text-white font-bold rounded-xl"
                 >
                   {editingId ? 'Enregistrer' : 'Ajouter'}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Modal Preview CSV ── */}
+      <AnimatePresence>
+        {showCsvModal && csvPreview && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-[#1a1c1e] p-6 rounded-3xl shadow-2xl w-full max-w-2xl border border-white/10 max-h-[80vh] flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-white">Aperçu Import CSV</h3>
+                  <p className="text-sm text-zinc-500 mt-0.5">{csvPreview.length} produit(s) détecté(s)</p>
+                </div>
+                <button onClick={() => { setShowCsvModal(false); setCsvPreview(null); }} className="text-gray-400 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-sm mb-4">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="text-amber-300">Format attendu : <code className="font-mono bg-amber-500/20 px-1 rounded">nom;prix_ht;tva;catégorie;stock;code-barre</code></span>
+              </div>
+
+              <div className="overflow-y-auto scrollbar-hide flex-1">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-[#1a1c1e]">
+                    <tr className="border-b border-white/10 text-left">
+                      <th className="pb-2 pr-4 text-zinc-400 font-semibold">Nom</th>
+                      <th className="pb-2 pr-4 text-zinc-400 font-semibold text-right">Prix HT</th>
+                      <th className="pb-2 pr-4 text-zinc-400 font-semibold text-right">TVA</th>
+                      <th className="pb-2 pr-4 text-zinc-400 font-semibold">Catégorie</th>
+                      <th className="pb-2 text-zinc-400 font-semibold text-right">Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {csvPreview.map((p, i) => (
+                      <tr key={i} className="border-b border-white/5 hover:bg-white/3">
+                        <td className="py-2 pr-4 text-white font-medium">{p.name}</td>
+                        <td className="py-2 pr-4 text-right text-white">{p.price_ht.toFixed(2)} €</td>
+                        <td className="py-2 pr-4 text-right text-zinc-400">{p.tva_rate}%</td>
+                        <td className="py-2 pr-4 text-zinc-300">{p.category}</td>
+                        <td className="py-2 text-right text-zinc-300">{p.stock}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex gap-3 justify-end mt-5">
+                <button onClick={() => { setShowCsvModal(false); setCsvPreview(null); }}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors">
+                  Annuler
+                </button>
+                <Button
+                  onPress={handleCsvImport}
+                  isLoading={csvImporting}
+                  startContent={!csvImporting && <Upload className="w-4 h-4" />}
+                  className="bg-[#0055ff] text-white font-bold rounded-xl"
+                >
+                  Importer {csvPreview.length} produit(s)
                 </Button>
               </div>
             </motion.div>
