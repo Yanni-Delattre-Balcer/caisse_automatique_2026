@@ -20,15 +20,6 @@ export function LandingLayout() {
           <Link to="/login" className="hidden md:block text-xs font-bold tracking-wider uppercase text-blue-600 hover:opacity-70 transition-opacity">
             Se connecter
           </Link>
-          <button
-            onClick={() => {
-                useAuthStore.getState().loginAsDemo();
-                navigate('/pos/quick');
-            }}
-            className="hidden md:block text-xs font-bold tracking-wider uppercase text-gray-500 hover:text-blue-600 transition-colors"
-          >
-            Démo
-          </button>
           <Button as={Link} to="/register" className="bg-[#0055ff] text-white px-6 py-2 rounded-full font-bold uppercase tracking-wider text-xs shadow-lg shadow-blue-500/30 hover:bg-[#0044cc] transition-all">
             Essayer gratuitement
           </Button>
@@ -39,11 +30,16 @@ export function LandingLayout() {
         <Outlet />
       </main>
 
-      <footer className="bg-white text-gray-400 py-10 text-center border-t border-gray-100 mt-20">
+      <footer className="bg-white text-gray-400 py-10 text-center">
         <p className="text-xs tracking-widest uppercase font-semibold mb-2">Developped by Nexus © 2026 — All Rights Reserved</p>
-        <div className="text-xs text-gray-300 hover:text-[#0099ff] transition-colors tracking-widest uppercase">
-          Propulsé par la Douchette Magique
-        </div>
+        <Link 
+          to="/about" 
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-gray-300 hover:text-[#0099ff] transition-colors tracking-widest uppercase"
+        >
+          About Nexus
+        </Link>
       </footer>
     </div>
   );

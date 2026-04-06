@@ -6,6 +6,7 @@ import {
   Wifi, FileSpreadsheet, Clock, ArrowRight, Star, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import { ContactForm } from '../components/ContactForm';
 
 // ── Utilitaire d'animation scroll ────────────────────────────────────────────
 function FadeIn({ children, delay = 0, className = '' }) {
@@ -182,19 +183,18 @@ export function LandingPageV2() {
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.85, ease: 'easeOut' }}
-          className="flex flex-col items-center max-w-4xl"
+          className="flex flex-col items-center max-w-6xl"
         >
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-bold tracking-widest uppercase mb-8 shadow-sm border border-blue-100">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            Conçu pour la conformité NF525
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black tracking-[0.2em] uppercase mb-8 shadow-sm border border-blue-100/50">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            CONÇU POUR LA CONFORMITÉ NF525
           </div>
 
           {/* Titre */}
-          <h1 className="text-5xl sm:text-7xl md:text-[5.2rem] font-black tracking-tight mb-6 leading-[1.05] text-gray-900">
-            Encaissez sans internet.
-            <br className="hidden md:block" />
-            <span className="bg-linear-to-br from-[#00f2ff] to-[#0055ff] bg-clip-text text-transparent">
+          <h1 className="text-4xl sm:text-6xl lg:text-[5.5rem] font-black tracking-[-0.04em] mb-10 leading-[1.1] text-gray-900">
+            <span className="block md:whitespace-nowrap">Encaissez sans internet.</span>
+            <span className="bg-linear-to-br from-[#00f2ff] to-[#0055ff] bg-clip-text text-transparent block md:whitespace-nowrap">
               Votre comptable dit merci.
             </span>
           </h1>
@@ -228,12 +228,6 @@ export function LandingPageV2() {
             >
               Démarrer gratuitement
             </Link>
-            <button
-              onClick={handleDemo}
-              className="border border-gray-200 text-gray-700 bg-white/60 backdrop-blur-sm px-8 py-4 rounded-full font-bold tracking-wider uppercase text-sm hover:border-[#0055ff] hover:text-[#0055ff] transition-all text-center"
-            >
-              Tester la démo →
-            </button>
             <a
               href="#pricing"
               className="text-gray-400 px-4 py-4 rounded-full font-bold tracking-wider uppercase text-xs hover:text-gray-600 transition-all text-center"
@@ -638,14 +632,32 @@ export function LandingPageV2() {
           </FadeIn>
         </div>
       </section>
+      {/* ── CONTACT SECTION ────────────────────────────────────────────────── */}
+      <section className="py-24 px-6 bg-white shrink-0" id="contact">
+        <div className="max-w-4xl mx-auto">
+          <FadeIn>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">
+                Une question ? Nous sommes là.
+              </h2>
+              <p className="mt-4 text-lg text-gray-500 font-medium">
+                Notre équipe vous répond sous 24h à 48h. Laissez-nous un message.
+              </p>
+            </div>
+            <ContactForm />
+          </FadeIn>
+        </div>
+      </section>
 
       {/* ── CTA FINAL ─────────────────────────────────────────────────────── */}
       <section className="py-28 px-6 bg-linear-to-br from-[#0055ff] to-[#00c4ff] relative overflow-hidden z-20">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.04\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] pointer-events-none" />
-        <div className="max-w-3xl mx-auto text-center relative z-10">
+        <div className="max-w-4xl mx-auto text-center relative z-10">
           <FadeIn>
-            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-5 leading-tight">
-              Votre prochaine journée sans panne,<br />commence maintenant.
+            <h2 className="text-4xl lg:text-5xl font-black text-white tracking-tight mb-5 leading-tight">
+              <span className="md:whitespace-nowrap">Votre prochaine journée sans panne,</span>
+              <br className="hidden md:block" />
+              commence maintenant.
             </h2>
             <p className="text-blue-100 text-lg font-medium mb-10 max-w-xl mx-auto">
               Rejoignez les commerçants qui encaissent sans stresser — même quand internet lâche.
@@ -657,12 +669,6 @@ export function LandingPageV2() {
               >
                 Démarrer gratuitement
               </Link>
-              <button
-                onClick={handleDemo}
-                className="border-2 border-white/40 text-white px-9 py-4 rounded-full font-bold tracking-wider uppercase text-sm hover:bg-white/10 transition-all text-center"
-              >
-                Voir la démo en direct →
-              </button>
             </div>
           </FadeIn>
         </div>

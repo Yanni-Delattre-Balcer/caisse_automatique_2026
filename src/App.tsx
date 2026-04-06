@@ -12,6 +12,8 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 import { LandingPage } from './pages/LandingPage';
 import { LandingPageV2 } from './pages/LandingPageV2';
 import { PricingPage } from './pages/PricingPage';
+import { ContactPage } from './pages/ContactPage';
+import { AboutPage } from './pages/AboutPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { PosPage } from './pages/PosPage';
@@ -42,6 +44,8 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/v2" element={<LandingPageV2 />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/about" element={<AboutPage />} />
       </Route>
 
       {/* Ticket public — sans authentification */}

@@ -79,6 +79,10 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
     // Ne pas s'abonner au temps réel en mode démo
     if (isDemo) return;
 
+    // Nettoyer l'ancien canal s'il existe pour éviter la lenteur exponentielle
+    const oldChannel = get()._realtimeChannel;
+    if (oldChannel) supabase.removeChannel(oldChannel);
+
     // Abonnement Realtime — toute modification dans Supabase Studio se répercute instantanément
     const channel = supabase
       .channel(`products-${bizId}`)
@@ -127,7 +131,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       return;
     }
     if (!user?.businessId) throw new Error('Non authentifié');
-    const { error } = await supabase.from('products').insert({
+    const { data, error } = await supabase.from('products').insert({
       business_id: user.businessId,
       name: itemData.name,
       price_ht: itemData.price_ht,
@@ -135,9 +139,15 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       category: itemData.category,
       stock_quantity: itemData.stock ?? 0,
       barcode: itemData.barcode ?? null,
-    });
+    }).select().single();
+    
     if (error) throw new Error(error.message);
-    // Le Realtime met à jour le store automatiquement — pas de set() manuel ici
+    
+    // UI instantanée : on n'attend pas que le Realtime se réveille
+    set((state) => {
+      if (state.items.some(i => i.id === data.id)) return state; // évite le doublon si Realtime est ultra-rapide
+      return { items: [...state.items, mapProduct(data as SupabaseProduct)] };
+    });
   },
 
   updateStock: async (itemId: string, newStockQuantity: number) => {

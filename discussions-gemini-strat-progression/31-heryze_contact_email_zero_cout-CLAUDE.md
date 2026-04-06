@@ -6,7 +6,7 @@
 
 ## Contexte & Problème
 
-Le système de contact existant (autre projet) repose sur un backend **FastAPI + Python + SMTP Gmail**. Ce backend doit tourner en continu pour répondre aux requêtes POST du formulaire.
+Le système de contact existant (autre projet : https://github.com/briacl/briac-le-meillat) repose sur un backend **FastAPI + Python + SMTP Gmail**. Ce backend doit tourner en continu pour répondre aux requêtes POST du formulaire.
 
 Pour Heryze, ce modèle est incompatible avec la stratégie actuelle pour trois raisons :
 
@@ -334,7 +334,7 @@ const response = await fetch('https://api.web3forms.com/submit', {
 
 #### Comprendre le pattern de Fufuni
 
-Après analyse du README et de l'architecture de Fufuni, voici exactement comment votre expert a construit son système d'emails. Ce n'est pas Mailgun appelé directement depuis le navigateur. Le schéma est le suivant :
+Après analyse du README et de l'architecture de Fufuni, https://github.com/sctg-development/fufuni, voici exactement comment votre expert a construit son système d'emails. Ce n'est pas Mailgun appelé directement depuis le navigateur. Le schéma est le suivant :
 
 ```
 Navigateur React

@@ -90,7 +90,7 @@ export function InventoryPage() {
             ),
           }));
         } else {
-          const { error } = await supabase
+          const { data, error } = await supabase
             .from('products')
             .update({
               name: productData.name,
@@ -100,8 +100,22 @@ export function InventoryPage() {
               stock_quantity: productData.stock,
               barcode: productData.barcode,
             })
-            .eq('id', editingId);
+            .eq('id', editingId)
+            .select();
           if (error) throw new Error(error.message);
+          
+          // Mise à jour instantanée de l'UI (Optimiste/Pessimiste)
+          useCatalogStore.setState((state) => ({
+            items: state.items.map((i) =>
+              i.id === editingId
+                ? {
+                    ...i,
+                    ...productData,
+                    price: productData.price_ht * (1 + (productData.tva_rate || 20) / 100),
+                  }
+                : i
+            ),
+          }));
         }
         addToast({ type: 'success', message: `"${form.name}" modifié.` });
       } else {
@@ -130,6 +144,11 @@ export function InventoryPage() {
       } else {
         const { error } = await supabase.from('products').delete().eq('id', item.id);
         if (error) throw new Error(error.message);
+        
+        // Mise à jour instantanée de l'UI
+        useCatalogStore.setState((state) => ({
+          items: state.items.filter((i) => i.id !== item.id),
+        }));
       }
       addToast({ type: 'success', message: `"${item.name}" supprimé.` });
     } catch (err) {
@@ -305,7 +324,7 @@ export function InventoryPage() {
       {/* Modal Ajout/Modification */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -426,7 +445,7 @@ export function InventoryPage() {
       {/* ── Modal Preview CSV ── */}
       <AnimatePresence>
         {showCsvModal && csvPreview && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}

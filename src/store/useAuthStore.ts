@@ -70,6 +70,7 @@ export const useAuthStore = create<AuthState>()(
               businessId: null,
             },
             isAuthenticated: true,
+            isDemo: false, // Force la sortie du mode démo
           });
           return;
         }
@@ -83,6 +84,7 @@ export const useAuthStore = create<AuthState>()(
             businessId: business.id,
           },
           isAuthenticated: true,
+          isDemo: false, // Force la sortie du mode démo
         });
       },
 

@@ -85,15 +85,6 @@ export function LandingPage() {
               <Link to="/register" className="bg-[#0055ff] text-white px-8 py-4 rounded-full font-bold tracking-wider uppercase text-sm shadow-xl shadow-blue-500/30 hover:bg-[#0044cc] hover:-translate-y-1 transition-all text-center">
                   Démarrer gratuitement
               </Link>
-              <button
-                onClick={() => {
-                    useAuthStore.getState().loginAsDemo();
-                    navigate('/pos/quick');
-                }}
-                className="border border-gray-200 text-gray-700 bg-white/50 backdrop-blur-sm px-8 py-4 rounded-full font-bold tracking-wider uppercase text-sm hover:border-[#0055ff] hover:text-[#0055ff] transition-all text-center focus:outline-none focus:ring-2 focus:ring-[#0055ff]/50 cursor-pointer"
-              >
-                  Tester la démo
-              </button>
               <a href="#pricing" className="text-gray-400 px-4 py-4 rounded-full font-bold tracking-wider uppercase text-xs hover:text-gray-600 transition-all text-center">
                   Voir nos tarifs
               </a>
