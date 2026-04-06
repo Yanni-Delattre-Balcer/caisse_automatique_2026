@@ -10,7 +10,6 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 
 // Pages
 import { LandingPage } from './pages/LandingPage';
-import { LandingPageV2 } from './pages/LandingPageV2';
 import { PricingPage } from './pages/PricingPage';
 import { ContactPage } from './pages/ContactPage';
 import { AboutPage } from './pages/AboutPage';
@@ -42,7 +41,6 @@ export default function App() {
       {/* Vitrine Commerciale */}
       <Route element={<LandingLayout />}>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/v2" element={<LandingPageV2 />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/about" element={<AboutPage />} />
