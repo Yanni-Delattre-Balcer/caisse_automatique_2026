@@ -100,8 +100,8 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
   stripe_customer_id TEXT,
   stripe_subscription_id TEXT,
-  plan TEXT NOT NULL DEFAULT 'trial' CHECK (plan IN ('trial', 'monthly', 'lifetime')),
-  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'cancelled', 'past_due', 'trialing')),
+  plan TEXT NOT NULL DEFAULT 'monthly' CHECK (plan IN ('monthly')), -- pivot: mensuel uniquement
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'cancelled', 'past_due')),
   trial_ends_at TIMESTAMPTZ,
   current_period_end TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

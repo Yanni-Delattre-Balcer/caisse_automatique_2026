@@ -68,6 +68,7 @@ export default defineConfig(({ mode }) => ({
         navigateFallback: base + 'index.html',
         navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        maximumFileSizeToCacheInBytes: 10000000,
         // Mise en cache des pages critiques offline
         runtimeCaching: [
           {

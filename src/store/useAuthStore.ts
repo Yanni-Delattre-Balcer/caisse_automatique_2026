@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
-import type { AppUser } from '../types';
+import type { AppUser, UserSubscription } from '../types';
 
 interface AuthState {
   user: AppUser | null;
@@ -53,13 +53,14 @@ export const useAuthStore = create<AuthState>()(
 
       // Méthode privée — ne jamais appeler depuis l'UI
       _hydrateUserFromSession: async (authUser: User) => {
-        const { data: business, error } = await supabase
+        // 1. Charger les données du business
+        const { data: business, error: bizError } = await supabase
           .from('businesses')
           .select('id, name, business_type')
           .eq('owner_id', authUser.id)
           .single();
 
-        if (error || !business) {
+        if (bizError || !business) {
           // Compte auth existant mais sans commerce associé (cas edge à l'inscription)
           set({
             user: {
@@ -68,12 +69,28 @@ export const useAuthStore = create<AuthState>()(
               companyName: null,
               businessDomain: null,
               businessId: null,
+              subscription: null,
             },
             isAuthenticated: true,
-            isDemo: false, // Force la sortie du mode démo
+            isDemo: false,
           });
           return;
         }
+
+        // 2. Charger l'abonnement rattaché au businessId réel
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select('plan, status, current_period_end')
+          .eq('business_id', business.id)
+          .single();
+
+        const userSubscription: UserSubscription | null = subscription
+          ? {
+              plan: subscription.plan as UserSubscription['plan'],
+              status: subscription.status as UserSubscription['status'],
+              currentPeriodEnd: subscription.current_period_end ?? null,
+            }
+          : null;
 
         set({
           user: {
@@ -82,9 +99,10 @@ export const useAuthStore = create<AuthState>()(
             companyName: business.name,
             businessDomain: business.business_type,
             businessId: business.id,
+            subscription: userSubscription,
           },
           isAuthenticated: true,
-          isDemo: false, // Force la sortie du mode démo
+          isDemo: false,
         });
       },
 
@@ -141,6 +159,7 @@ export const useAuthStore = create<AuthState>()(
             companyName: 'Boulangerie Louise',
             businessDomain: 'Restauration',
             businessId: 'demo-business-id',
+            subscription: null,
           },
           isAuthenticated: true,
           isDemo: true,

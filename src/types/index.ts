@@ -1,3 +1,10 @@
+// Statut d'abonnement de l'utilisateur (depuis la table `subscriptions`)
+export interface UserSubscription {
+  plan: 'trial' | 'monthly' | 'annual' | 'pro' | null;
+  status: 'active' | 'cancelled' | 'past_due' | 'trialing' | null;
+  currentPeriodEnd: string | null; // ISO date string
+}
+
 // L'utilisateur tel qu'exposé par useAuthStore
 export interface AppUser {
   id: string;
@@ -5,6 +12,7 @@ export interface AppUser {
   companyName: string | null;    // Depuis businesses.name
   businessDomain: string | null; // Depuis businesses.business_type
   businessId: string | null;     // UUID de businesses.id — critique pour les requêtes
+  subscription: UserSubscription | null; // Données d'abonnement Stripe
 }
 
 // Un produit tel qu'exposé par useCatalogStore (prix TTC calculé côté client)

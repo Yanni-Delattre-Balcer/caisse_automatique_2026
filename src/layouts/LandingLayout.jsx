@@ -14,7 +14,7 @@ export function LandingLayout() {
         </Link>
         <div className="hidden md:flex items-center gap-8 text-sm font-semibold tracking-wider uppercase text-blue-600/80">
           <a href="#features" className="hover:text-blue-600 transition-colors">Fonctionnalités</a>
-          <Link to="/pricing" className="hover:text-blue-600 transition-colors">Tarifs</Link>
+          <a href="#pricing" className="hover:text-blue-600 transition-colors">Tarifs</a>
         </div>
         <div className="flex items-center gap-4">
           <Link to="/login" className="hidden md:block text-xs font-bold tracking-wider uppercase text-blue-600 hover:opacity-70 transition-opacity">

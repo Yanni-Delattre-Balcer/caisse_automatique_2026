@@ -190,23 +190,37 @@
 
 ---
 
+## 💳 10. Flux Stripe & Abonnements (Nouveau)
+
+> **Pré-requis** : Avoir configuré les clés Stripe et déployé les fonctions Edge (`stripe-checkout`, `stripe-webhook`). Correction SQL effectuée.
+
+| # | Action | Résultat attendu |
+| :--- | :--- | :--- |
+| 10.1 | Aller sur `/pricing` (authentifié) | Affiche le sélecteur d'effectif avec calcul dynamique du prix |
+| 10.2 | Ajuster l'effectif à **3** et cliquer "S'abonner" | Spinner "Redirection...", puis redirection vers Stripe Checkout |
+| 10.3 | Vérifier Stripe Checkout | Affiche le bon libellé (Heryze Mensuel) et la quantité (3) |
+| 10.4 | Payer avec une carte de test (`4242...`) | Redirection vers `/dashboard?payment=success` |
+| 10.5 | Vérifier le Dashboard | Toast de succès affiché, accès aux fonctionnalités débloqué |
+| 10.6 | Vérifier Supabase (Table `subscriptions`) | Une ligne `monthly` avec status `active` est apparue pour le business |
+| 10.7 | Test Webhook : Simuler une annulation dans Stripe | Le status passe en `cancelled` dans Supabase sous 5 secondes |
+
+---
+
 ## 🚦 Checklist "Go/No-Go" pour la Bêta
 
-### Go obligatoire (bloquant) ✅
-- [ ] Flux complet de vente sans erreur console (R.1 corrigé)
-- [ ] Offline-First fonctionnel : vente hors ligne → sync automatique à la reconnexion
-- [ ] Mode Démo accessible et stable (landing + login)
+### Go obligatoire (bloquant) 🔴
+- [ ] Correction de la contrainte SQL `subscriptions_plan_check` (Monthly uniquement)
+- [ ] Flux de vente Offline-First : vente → sync automatique à la reconnexion
+- [ ] Mode Démo stable (pas de boucle infinie au login)
+- [ ] Paiement Stripe fonctionnel (Checkout → Webhook → DB Sync)
 - [ ] Ticket QR Code scannable par le client
-- [ ] Import CSV opérationnel
-- [ ] Export comptable Excel lisible
 
-### Go souhaitable (non bloquant)
-- [ ] PWA installable sur iOS et Android
-- [ ] Scanner smartphone : 10 scans consécutifs sans latence
-- [ ] Z-Caisse : chiffres cohérents avec les ventes de la journée
-- [ ] Responsive tablette vérifié (iPad portrait/paysage)
-- [ ] Raccourcis clavier (`/` chercher, `Entrée` payer, `Esc` annuler) — **à implémenter**
-- [ ] Route `/tables` implémentée ou retirée de la sidebar — **à décider**
+### Go souhaitable (non bloquant) 🟡
+- [ ] PWA installable sans erreur de cache (Workbox limit fixe)
+- [ ] Interface responsive sur tablette (IPad)
+- [ ] Scanner smartphone : latence < 500ms
+- [ ] Z-Caisse : cohérence mathématique des totaux
+- [ ] Raccourcis clavier de base (`/`, `Entrée`)
 
 ---
 

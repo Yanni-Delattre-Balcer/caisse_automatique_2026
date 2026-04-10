@@ -1,239 +1,248 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Check, Download, ShieldCheck, CalendarDays, Gem, Crown } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Check, Download, ShieldCheck, CalendarDays, Gem, Crown, Loader2, Utensils, LayoutGrid } from 'lucide-react';
+import { redirectToCheckout } from '../lib/stripe';
+import { useAuthStore } from '../store/useAuthStore';
 
 // ──────────────────────────────────────────────────
-// Données des plans
+// Données des Modèles
 // ──────────────────────────────────────────────────
-const PLANS = [
+
+const HYBRID_PLANS = [
   {
-    id: 'monthly',
-    icon: <CalendarDays className="w-5 h-5" />,
-    label: 'Mensuel',
+    id: 'hybrid-starter',
+    label: 'Starter (Solo)',
     price: '19',
-    priceSuffix: '€/mois',
-    billing: 'Facturé mensuellement',
-    badge: null,
+    usage: '1 accès, Inventaire, Exports',
     highlight: false,
-    features: [
-      'Scanner WebRTC illimité',
-      'Synchronisation Cloud temps réel',
-      'Export comptable mensuel',
-      'Tableau de bord analytique',
-      'Support par email 5j/7',
-    ],
-    disabledFeatures: [],
+    icon: <CalendarDays className="w-5 h-5 text-blue-500" />,
   },
   {
-    id: 'annual',
-    icon: <Gem className="w-5 h-5" />,
-    label: 'Annuel',
-    price: '190',
-    priceSuffix: '€/an',
-    priceNote: 'soit 15,83 €/mois',
-    billing: 'Facturé annuellement',
-    badge: 'MEILLEURE VALEUR',
-    highlight: true,
-    oldPrice: '228',
-    features: [
-      'Scanner WebRTC illimité',
-      'Synchronisation Cloud temps réel',
-      'Export comptable mensuel',
-      'Tableau de bord analytique',
-      '2 mois offerts vs mensuel',
-      'Support prioritaire 7j/7',
-    ],
-    disabledFeatures: [],
-  },
-  {
-    id: 'pro',
-    icon: <Crown className="w-5 h-5" />,
-    label: 'Pro',
+    id: 'hybrid-pro',
+    label: 'Pro (Multi)',
     price: '39',
-    priceSuffix: '€/mois',
-    priceNote: 'Facturé annuellement',
-    billing: 'Multi-postes · Équipe',
-    badge: null,
-    highlight: false,
-    features: [
-      'Tout du plan Annuel',
-      "Jusqu'à 5 postes de caisse",
-      'Programme de fidélité client',
-      'Statistiques avancées & prédictions',
-      'Export expert-comptable PDF/CSV',
-      'Support dédié + onboarding',
-    ],
-    disabledFeatures: [],
+    usage: '5 accès, Gestion des stocks, Dashboard',
+    highlight: true,
+    icon: <Gem className="w-5 h-5 text-blue-600" />,
+  }
+];
+
+const FLOW_PLANS = [
+  {
+    id: 'flow-starter',
+    label: 'Starter',
+    sublabel: 'Indépendant & Artisan',
+    price: '19',
+    feature: '1 seul point de vente',
+    desc: 'Psychologiquement indolore, parfait pour débuter.',
+    icon: <CalendarDays className="w-5 h-5" />,
   },
+  {
+    id: 'flow-business',
+    label: 'Business',
+    sublabel: 'Boutique & Équipe',
+    price: '39',
+    feature: 'Multi-postes / Accès simultanés',
+    desc: 'Deux fois moins cher que la concurrence.',
+    icon: <Gem className="w-5 h-5" />,
+  },
+  {
+    id: 'flow-expert',
+    label: 'Expert',
+    sublabel: 'Restauration & Complexité',
+    price: '69',
+    feature: 'Plan de salle & Imprimante cuisine',
+    desc: 'Le sauveur de rentabilité pour les restaurateurs.',
+    icon: <Crown className="w-5 h-5" />,
+  }
+];
+
+const MODULES = [
+  {
+    id: 'mod-resto',
+    label: 'Module Restauration',
+    price: '10',
+    desc: 'Plan de salle interactif et gestion des tables en temps réel.',
+    icon: <Utensils className="w-5 h-5 text-amber-500" />,
+  }
 ];
 
 // ──────────────────────────────────────────────────
-// Composant principal
+// Sous-composant Carte
+// ──────────────────────────────────────────────────
+function PricingCard({ plan, isAnnual, type = 'default' }) {
+  const displayPrice = isAnnual ? Math.floor(plan.price * 10) : plan.price;
+  const suffix = isAnnual ? '€/an' : '€/mois';
+  
+  return (
+    <div className={`relative rounded-2xl bg-white p-7 border transition-all duration-200 ${
+      plan.highlight 
+        ? 'border-2 border-blue-500 shadow-xl -mt-2' 
+        : 'border-gray-200 shadow-sm hover:shadow-md'
+    }`}>
+      {plan.badge && (
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+          <span className="bg-blue-500 text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest leading-none shadow-md">
+            {plan.badge}
+          </span>
+        </div>
+      )}
+      
+      <div className="flex items-center gap-2 mb-4">
+        {plan.icon}
+        <span className="font-bold text-gray-900">{plan.label}</span>
+      </div>
+
+      {plan.sublabel && <p className="text-xs text-blue-500 font-bold mb-3 uppercase tracking-wider">{plan.sublabel}</p>}
+
+      <div className="mb-5">
+        <div className="flex items-baseline gap-1">
+          <span className="text-4xl font-black text-gray-900">{displayPrice}</span>
+          <span className="text-gray-500 font-medium text-sm">{suffix}</span>
+        </div>
+        {isAnnual && (
+          <p className="text-green-600 text-xs font-bold mt-1">2 mois offerts inclus</p>
+        )}
+      </div>
+
+      <hr className="mb-5 border-gray-100" />
+
+      <div className="space-y-3 mb-8">
+        {plan.usage && (
+          <div className="flex items-start gap-2 text-sm font-medium text-gray-700">
+            <Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+            <span>{plan.usage}</span>
+          </div>
+        )}
+        {plan.feature && (
+          <div className="flex items-start gap-2 text-sm font-bold text-gray-900">
+            <Check className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+            <span>{plan.feature}</span>
+          </div>
+        )}
+        {plan.desc && <p className="text-xs text-gray-500 leading-relaxed font-medium">{plan.desc}</p>}
+      </div>
+
+      <button className={`w-full py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+        plan.highlight 
+          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700' 
+          : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+      }`}>
+        Choisir ce plan
+      </button>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────
+// Composant Principal
 // ──────────────────────────────────────────────────
 export function PricingPage() {
-  const [hoveredPlan, setHoveredPlan] = useState(null);
+  const [billing, setBilling] = useState('mensuel');
+  const isAnnual = billing === 'annuel';
 
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900">
-
-      {/* ── Hero ──────────────────────────────── */}
-      <section className="pt-10 pb-4 px-6 text-center max-w-3xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-tight mb-4">
-          Essayez gratuitement,<br />
-          <span className="text-gray-900">payez quand vous êtes prêt</span>
+    <div className="min-h-screen bg-[#fcfcfc] font-sans pb-24">
+      
+      {/* ── Header ──────────────── */}
+      <header className="pt-20 pb-12 px-6 text-center max-w-4xl mx-auto">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black tracking-widest uppercase mb-6 border border-blue-100">
+          Laboratoire de Pricing
+        </div>
+        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-gray-900 mb-6">
+          Visualisez nos nouveaux <br /> 
+          <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">concepts stratégiques</span>
         </h1>
-        <p className="text-gray-500 text-base md:text-lg font-medium">
-          Heryze est gratuit à essayer pendant 14 jours. Aucune carte bancaire requise.
+        <p className="text-gray-500 text-lg font-medium max-w-2xl mx-auto">
+          Test visuel des grilles tarifaires sans IA. Comparez l'approche "Hybrid" vs. l'approche "Flow" par métier.
         </p>
 
-        {/* ── Badges avantages ──────────────── */}
-        <div className="flex flex-wrap justify-center gap-3 mt-8">
-          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-green-200 bg-green-50 text-green-700 text-sm font-semibold shadow-sm">
-            <Check className="w-4 h-4" />
-            Gratuit à essayer
-          </span>
-          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-blue-200 bg-blue-50 text-blue-700 text-sm font-semibold shadow-sm">
-            <ShieldCheck className="w-4 h-4" />
-            Payez quand vous êtes prêt
-          </span>
-          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold shadow-sm">
-            <ShieldCheck className="w-4 h-4" />
-            Garantie satisfait 14 jours
-          </span>
-        </div>
-      </section>
-
-      {/* ── Bannière Essai Gratuit ─────────── */}
-      <section className="max-w-4xl mx-auto px-6 mt-10 mb-2">
-        <div className="rounded-2xl border-2 border-green-200 bg-green-50/60 px-8 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Download className="w-5 h-5 text-green-600" />
-              <span className="text-lg font-black text-gray-900">Essai Gratuit</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-black text-gray-900">0 €</span>
-            </div>
-            <p className="text-green-700 font-bold text-sm mt-1">14 jours · Aucune carte requise</p>
-          </div>
-
-          <div className="flex flex-col gap-2 text-sm text-gray-600 font-medium">
-            <span className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Toutes les fonctionnalités débloquées</span>
-            <span className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Mode démo avec données fictives</span>
-            <span className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Synchronisation Cloud incluse</span>
-            <span className="flex items-center gap-2 text-gray-400"><Check className="w-4 h-4 text-gray-300" /> Nécessite un abonnement après 14j</span>
-          </div>
-
-          <Link
-            to="/register"
-            className="shrink-0 bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3.5 rounded-xl text-sm uppercase tracking-wider transition-all shadow-md shadow-green-500/20 hover:-translate-y-0.5"
-          >
-            Démarrer l'essai
-          </Link>
-        </div>
-      </section>
-
-      {/* ── 3 cartes plans ────────────────── */}
-      <section className="max-w-5xl mx-auto px-6 mt-6 pb-20">
-        <div className="grid md:grid-cols-3 gap-6 items-start">
-          {PLANS.map((plan) => (
-            <div
-              key={plan.id}
-              onMouseEnter={() => setHoveredPlan(plan.id)}
-              onMouseLeave={() => setHoveredPlan(null)}
-              className={`relative rounded-2xl bg-white flex flex-col transition-all duration-200 ${
-                plan.highlight
-                  ? 'border-2 border-[#0099ff] shadow-xl shadow-blue-500/10 -mt-3'
-                  : 'border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300'
-              }`}
+        {/* ── Toggle ──────────────── */}
+        <div className="mt-10 flex justify-center">
+          <div className="inline-flex items-center p-1.5 bg-gray-100 rounded-2xl border border-gray-200">
+            <button 
+              onClick={() => setBilling('mensuel')}
+              className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${billing === 'mensuel' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              {/* Badge Meilleure Valeur */}
-              {plan.badge && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-                  <span className="bg-[#0099ff] text-white text-[11px] font-black tracking-widest uppercase px-4 py-1.5 rounded-full shadow-md shadow-blue-400/30 whitespace-nowrap">
-                    {plan.badge}
-                  </span>
-                </div>
-              )}
-
-              <div className="p-7 pt-8 flex-1 flex flex-col">
-                {/* En-tête plan */}
-                <div className="flex items-center gap-2 text-gray-700 font-semibold mb-5">
-                  <span className={plan.highlight ? 'text-[#0099ff]' : 'text-gray-500'}>
-                    {plan.icon}
-                  </span>
-                  <span className="text-base font-bold">{plan.label}</span>
-                </div>
-
-                {/* Prix */}
-                <div className="mb-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-black tracking-tighter text-gray-900">
-                      {plan.price}
-                    </span>
-                    <span className="text-gray-500 font-medium text-sm">{plan.priceSuffix}</span>
-                    {plan.oldPrice && (
-                      <span className="text-gray-400 text-sm line-through font-medium">
-                        {plan.oldPrice} €
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-gray-500 text-sm mt-0.5">{plan.billing}</p>
-                  {plan.priceNote && (
-                    <p className={`text-sm font-bold mt-0.5 ${plan.highlight ? 'text-[#0099ff]' : 'text-gray-400'}`}>
-                      {plan.priceNote}
-                    </p>
-                  )}
-                </div>
-
-                <hr className="my-5 border-gray-100" />
-
-                {/* Features */}
-                <ul className="space-y-3 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-3 text-sm">
-                      <Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                      <span className="text-gray-700 font-medium">{f}</span>
-                    </li>
-                  ))}
-                  {plan.disabledFeatures.map((f) => (
-                    <li key={f} className="flex items-start gap-3 text-sm opacity-40">
-                      <Check className="w-4 h-4 text-gray-300 shrink-0 mt-0.5" />
-                      <span className="text-gray-400 font-medium">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* CTA */}
-                <div className="mt-7 flex flex-col gap-2">
-                  <Link
-                    to="/register"
-                    className={`w-full text-center font-bold py-3 rounded-xl text-sm uppercase tracking-wider transition-all ${
-                      plan.highlight
-                        ? 'bg-[#0099ff] hover:bg-[#007acc] text-white shadow-md shadow-blue-400/20 hover:-translate-y-0.5'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200'
-                    }`}
-                  >
-                    Commencer l'essai gratuit
-                  </Link>
-                  <p className="text-center text-xs text-gray-400">
-                    Déjà essayé ?{' '}
-                    <Link to="/login" className="text-[#0099ff] hover:underline font-semibold">
-                      Activer mon plan
-                    </Link>
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
+              Mensuel
+            </button>
+            <button 
+              onClick={() => setBilling('annuel')}
+              className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${billing === 'annuel' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Annuel 
+              <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-600 text-[10px]">-2 mois</span>
+            </button>
+          </div>
         </div>
+      </header>
 
-        {/* Note bas de page */}
-        <p className="text-center text-gray-400 text-sm font-medium mt-12">
-          Pas de frais cachés. Pas d'engagement annuel sur le plan mensuel.{' '}
-          <span className="font-bold">Vous contrôlez votre abonnement.</span>
+      <div className="max-w-7xl mx-auto px-6 space-y-24">
+        
+        {/* ── Section 1 : Hybrid ──────────────── */}
+        <section>
+          <div className="flex items-center gap-4 mb-10">
+            <div className="h-px bg-gray-200 flex-1" />
+            <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Grille "Heryze Hybrid"</span>
+            <div className="h-px bg-gray-200 flex-1" />
+          </div>
+          <div className="grid sm:grid-cols-2 lg:max-w-3xl mx-auto gap-8">
+            {HYBRID_PLANS.map(plan => (
+              <PricingCard key={plan.id} plan={plan} isAnnual={isAnnual} />
+            ))}
+          </div>
+        </section>
+
+        {/* ── Section 2 : Modules ──────────────── */}
+        <section>
+          <div className="flex items-center gap-4 mb-10">
+            <div className="h-px bg-gray-200 flex-1" />
+            <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Power Features (Modules)</span>
+            <div className="h-px bg-gray-200 flex-1" />
+          </div>
+          <div className="flex justify-center">
+            {MODULES.map(mod => (
+              <div key={mod.id} className="w-full max-w-md bg-white rounded-2xl p-6 border border-amber-100 shadow-sm flex items-center gap-6">
+                <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0">
+                  {mod.icon}
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-900">{mod.label}</h4>
+                  <p className="text-xs text-gray-500 font-medium mb-1">{mod.desc}</p>
+                  <p className="text-xs font-bold text-amber-600">+{mod.price}€ / mois</p>
+                </div>
+                <button className="px-4 py-2 rounded-lg bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider hover:bg-amber-600 transition-colors">
+                  Ajouter
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Section 3 : Flow ──────────────── */}
+        <section>
+          <div className="flex items-center gap-4 mb-10">
+            <div className="h-px bg-gray-200 flex-1" />
+            <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Paliers Métier (Heryze Flow)</span>
+            <div className="h-px bg-gray-200 flex-1" />
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {FLOW_PLANS.map(plan => (
+              <PricingCard key={plan.id} plan={plan} isAnnual={isAnnual} />
+            ))}
+          </div>
+        </section>
+
+      </div>
+
+      {/* ── Note ──────────────── */}
+      <footer className="mt-24 text-center">
+        <p className="text-gray-400 text-sm font-medium">
+          Ce visuel est une simulation commerciale. <br />
+          <span className="font-bold">Zéro IA intégrée dans ces tarifs pour le moment.</span>
         </p>
-      </section>
+      </footer>
+
     </div>
   );
 }

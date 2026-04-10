@@ -1,4 +1,5 @@
 import { loadStripe, type Stripe } from '@stripe/stripe-js';
+import { supabase } from './supabaseClient';
 
 let stripePromise: Promise<Stripe | null> | null = null;
 
@@ -14,25 +15,46 @@ export const getStripe = () => {
   return stripePromise;
 };
 
-export const redirectToCheckout = async (priceId: string, email?: string) => {
-  const stripe = await getStripe();
-  if (!stripe) {
-    throw new Error('Stripe non configuré. Ajoutez VITE_STRIPE_PUBLISHABLE_KEY dans .env');
+/**
+ * Crée une session Stripe Checkout et redirige l'utilisateur vers la page de paiement.
+ * Nécessite que l'utilisateur soit authentifié (JWT Supabase requis).
+ */
+export const redirectToCheckout = async (priceId: string, planType: string) => {
+  // Récupérer la session courante pour obtenir le JWT
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+
+  if (!token) {
+    throw new Error('Vous devez être connecté pour souscrire à un abonnement.');
   }
 
-  // En production, cette URL pointe vers une Supabase Edge Function ou un API endpoint
-  const checkoutUrl = import.meta.env.VITE_STRIPE_CHECKOUT_URL || '/api/create-checkout';
+  // URL de la Supabase Edge Function (configurée dans .env)
+  const checkoutUrl = import.meta.env.VITE_STRIPE_CHECKOUT_URL;
+
+  if (!checkoutUrl) {
+    throw new Error('VITE_STRIPE_CHECKOUT_URL non configurée dans le .env');
+  }
 
   const response = await fetch(checkoutUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ priceId, email }),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ priceId, planType }),
   });
 
   if (!response.ok) {
-    throw new Error('Erreur lors de la création de la session de paiement.');
+    const error = await response.json().catch(() => ({ error: 'Erreur inconnue' }));
+    throw new Error(error.error || 'Erreur lors de la création de la session de paiement.');
   }
 
   const { url } = await response.json();
+
+  if (!url) {
+    throw new Error('URL de paiement manquante dans la réponse.');
+  }
+
+  // Redirection vers la page de paiement Stripe
   window.location.href = url;
 };

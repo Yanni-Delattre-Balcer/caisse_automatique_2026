@@ -26,105 +26,133 @@ function FadeIn({ children, delay = 0, className = '' }) {
 }
 
 // ── Plans tarifaires ──────────────────────────────────────────────────────────
+// ── Plans tarifaires ──────────────────────────────────────────────────────────
 const PLANS_MENSUEL = [
   {
     id: 'solo',
-    icon: <Zap className="w-5 h-5" />,
+    icon: <CalendarDays className="w-5 h-5" />,
     label: 'Solo',
-    sublabel: 'Pour démarrer',
-    price: '0',
-    priceSuffix: 'gratuit pour toujours',
-    billing: 'Aucune carte requise',
+    sublabel: 'Indépendant (1 accès)',
+    price: '12',
+    priceSuffix: '€/mois',
+    billing: '1 accès utilisateur',
     badge: null,
     highlight: false,
     cta: 'Démarrer gratuitement',
     ctaLink: '/register',
     features: [
-      '1 utilisateur, 1 commerce',
-      "Jusqu'à 50 produits au catalogue",
-      "Jusqu'à 100 transactions/mois",
-      'Caisse offline-first',
-      'Scanner smartphone (WebRTC)',
-      'Ticket numérique QR Code',
-      'Export CSV basique',
+      'Scanner WebRTC illimité',
+      'Synchronisation Cloud temps réel',
+      'Export comptable mensuel',
+      'Support par email 5j/7',
+      'Idéal pour indépendants',
     ],
     disabledFeatures: [
-      'Z-caisse PDF',
-      'Dashboard analytiques',
-      'Alertes stock',
-      'Import CSV catalogue',
-      'Support prioritaire',
+      'Multi-postes (Équipe)',
+      'Fidélité client avancée',
     ],
   },
   {
-    id: 'pro',
+    id: 'team',
     icon: <Gem className="w-5 h-5" />,
-    label: 'Pro',
-    sublabel: 'Boulangeries, salons, épiceries',
-    price: '19',
+    label: 'Team 5',
+    sublabel: 'Petite équipe (2-5 accès)',
+    price: '24',
     priceSuffix: '€/mois',
-    billing: 'Facturé mensuellement',
-    badge: 'LE PLUS POPULAIRE',
+    billing: 'Jusqu\'à 5 postes de caisse',
+    badge: 'POPULAIRE',
     highlight: true,
     cta: 'Démarrer gratuitement',
     ctaLink: '/register',
     features: [
-      'Produits & transactions illimités',
-      'Z-caisse PDF quotidien',
-      'Dashboard analytiques complet',
-      'Alertes stock bas configurables',
-      'Import catalogue CSV',
-      'Tickets avec logo du commerce',
-      'Historique ventes 12 mois',
-      '2 terminaux inclus',
-      'Support email (réponse sous 48h)',
+      'Tout du plan Solo',
+      'Jusqu\'à 5 postes de caisse',
+      'Statistiques d\'équipe',
+      'Support prioritaire 7j/7',
+      '2 mois offerts (annuel)',
     ],
-    disabledFeatures: [],
+    disabledFeatures: [
+      'Accès illimité (+10)',
+    ],
   },
   {
     id: 'business',
     icon: <Crown className="w-5 h-5" />,
-    label: 'Business',
-    sublabel: 'Restaurants, multi-postes',
+    label: 'Business 10',
+    sublabel: 'PME (6-10 accès)',
     price: '39',
     priceSuffix: '€/mois',
-    billing: 'Facturé mensuellement',
+    billing: 'De 6 à 10 accès',
     badge: null,
     highlight: false,
     cta: 'Démarrer gratuitement',
     ctaLink: '/register',
     features: [
-      'Terminaux illimités',
-      'Gestion des tables (Restauration)',
-      'Multi-utilisateurs avec rôles',
-      'Export comptable normé (FEC)',
+      'Tout du plan Team 5',
+      'Jusqu\'à 10 postes de caisse',
       'Programme de fidélité client',
       'Statistiques avancées & prédictions',
-      'Support chat prioritaire (sous 24h)',
-      'White-label tickets (votre marque)',
+      'Export expert-comptable PDF/CSV',
+      'Support dédié + onboarding',
+    ],
+    disabledFeatures: [],
+  },
+  {
+    id: 'entreprise',
+    icon: <ShieldCheck className="w-5 h-5" />,
+    label: 'Entreprise',
+    sublabel: 'Accès illimité (+10 accès)',
+    price: '49',
+    priceSuffix: '€/mois',
+    billing: 'Postes de caisse illimités',
+    badge: null,
+    highlight: false,
+    cta: 'Démarrer gratuitement',
+    ctaLink: '/register',
+    features: [
+      'Tout du plan Business 10',
+      'Postes de caisse illimités',
+      'Multi-boutiques (en option)',
+      'SLA Garanti 99.9%',
+      'Support téléphone dédié',
     ],
     disabledFeatures: [],
   },
 ];
 
 const PLANS_ANNUEL = [
-  { ...PLANS_MENSUEL[0] },
-  {
-    ...PLANS_MENSUEL[1],
-    price: '159',
-    priceSuffix: '€/an',
-    priceNote: 'soit 13,25 €/mois — 2 mois offerts',
-    oldPrice: '228',
-    billing: 'Facturé annuellement',
-    badge: 'MEILLEURE VALEUR',
+  { 
+    ...PLANS_MENSUEL[0], 
+    price: '120', 
+    priceSuffix: '€/an', 
+    priceNote: 'soit 10 €/mois — 2 mois offerts', 
+    oldPrice: '144',
+    billing: 'Facturé annuellement'
   },
-  {
-    ...PLANS_MENSUEL[2],
-    price: '319',
-    priceSuffix: '€/an',
-    priceNote: 'soit 26,58 €/mois — 2 mois offerts',
-    oldPrice: '468',
+  { 
+    ...PLANS_MENSUEL[1], 
+    price: '240', 
+    priceSuffix: '€/an', 
+    priceNote: 'soit 20 €/mois — 2 mois offerts', 
+    oldPrice: '288',
     billing: 'Facturé annuellement',
+    badge: 'MEILLEURE VALEUR'
+  },
+  { 
+    ...PLANS_MENSUEL[2], 
+    price: '390', 
+    priceSuffix: '€/an', 
+    priceNote: 'soit 32,50 €/mois — 2 mois offerts', 
+    oldPrice: '468',
+    billing: 'Facturé annuellement'
+  },
+  { 
+    ...PLANS_MENSUEL[3], 
+    price: '490', 
+    priceSuffix: '€/an', 
+    priceNote: 'soit 40,83 €/mois — 2 mois offerts', 
+    oldPrice: '588',
+    billing: 'Facturé annuellement'
   },
 ];
 
@@ -463,7 +491,7 @@ export function LandingPage() {
           </FadeIn>
 
           {/* Cartes plans */}
-          <div className="grid md:grid-cols-3 gap-6 items-start">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
             {plans.map((plan, i) => (
               <FadeIn key={plan.id + billing} delay={i * 0.1}>
                 <div
