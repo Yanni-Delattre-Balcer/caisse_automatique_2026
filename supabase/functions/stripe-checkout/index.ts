@@ -4,7 +4,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import Stripe from 'https://esm.sh/stripe@16?target=deno';
+import Stripe from 'npm:stripe@17';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-11-20.acacia',
@@ -17,7 +17,7 @@ const APP_URL = Deno.env.get('APP_URL') || 'http://localhost:5173';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-token',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
@@ -28,9 +28,10 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Vérifier l'authentification de l'utilisateur via son JWT Supabase
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    // 1. Vérifier l'authentification via le header custom x-user-token
+    // (Authorization contient l'anon key pour le runtime, x-user-token contient le JWT utilisateur)
+    const userToken = req.headers.get('x-user-token');
+    if (!userToken) {
       return new Response(JSON.stringify({ error: 'Non authentifié' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -39,10 +40,8 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Valider le JWT et récupérer l'utilisateur
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
+    // Valider le JWT utilisateur via l'API Auth Supabase (vérification serveur, pas locale)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(userToken);
 
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Token invalide' }), {
@@ -102,6 +101,9 @@ serve(async (req) => {
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card'],
+      subscription_data: {
+        trial_period_days: 14,
+      },
       line_items: [
         {
           price: priceId,
@@ -109,8 +111,8 @@ serve(async (req) => {
         },
       ],
       // URLs de retour post-paiement
-      success_url: `${APP_URL}/dashboard?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${APP_URL}/pricing?payment=cancelled`,
+      success_url: `${APP_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${APP_URL}/checkout-summary?plan=${planType || 'starter'}&payment=cancelled`,
       // Métadonnées pour la réconciliation dans le webhook
       metadata: {
         businessId: business.id,
@@ -129,8 +131,9 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
     console.error('[stripe-checkout] Erreur:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

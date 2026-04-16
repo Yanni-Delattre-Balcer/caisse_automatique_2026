@@ -4,11 +4,10 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import Stripe from 'https://esm.sh/stripe@16?target=deno';
+import Stripe from 'npm:stripe@17';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-11-20.acacia',
-  httpClient: Stripe.createFetchHttpClient(),
 });
 
 const STRIPE_WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
@@ -55,6 +54,10 @@ function getPlanFromPriceId(priceId: string): string {
     [Deno.env.get('STRIPE_PRICE_MONTHLY') || '']: 'monthly',
     [Deno.env.get('STRIPE_PRICE_ANNUAL') || '']: 'annual',
     [Deno.env.get('STRIPE_PRICE_PRO') || '']: 'pro',
+    // Alias nommés par tier métier (Flow pricing)
+    [Deno.env.get('STRIPE_PRICE_STARTER') || '']: 'starter',
+    [Deno.env.get('STRIPE_PRICE_BUSINESS') || '']: 'business',
+    [Deno.env.get('STRIPE_PRICE_EXPERT') || '']: 'expert',
   };
   return PRICE_MAP[priceId] || 'monthly';
 }
@@ -77,8 +80,9 @@ serve(async (req) => {
   try {
     event = await stripe.webhooks.constructEventAsync(body, signature, STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error('[stripe-webhook] Signature invalide:', err.message);
-    return new Response(`Webhook invalide: ${err.message}`, { status: 400 });
+    const errMsg = err instanceof Error ? err.message : 'Erreur inconnue';
+    console.error('[stripe-webhook] Signature invalide:', errMsg);
+    return new Response(`Webhook invalide: ${errMsg}`, { status: 400 });
   }
 
   console.log(`[stripe-webhook] Événement reçu: ${event.type}`);
@@ -113,6 +117,12 @@ serve(async (req) => {
           status: 'active',
           currentPeriodEnd: new Date(subscription.current_period_end * 1000),
         });
+
+        // Mettre à jour le statut dans businesses pour que l'app le reflète immédiatement
+        await supabase
+          .from('businesses')
+          .update({ subscription_status: 'active' })
+          .eq('id', businessId);
 
         console.log(`[stripe-webhook] Abonnement activé pour business: ${businessId}, plan: ${plan}`);
         break;
@@ -198,6 +208,11 @@ serve(async (req) => {
           currentPeriodEnd: new Date(subscription.current_period_end * 1000),
         });
 
+        await supabase
+          .from('businesses')
+          .update({ subscription_status: 'canceled' })
+          .eq('id', sub.business_id);
+
         console.log(`[stripe-webhook] Abonnement annulé pour customer: ${customerId}`);
         break;
       }
@@ -234,9 +249,10 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Erreur inconnue';
     console.error('[stripe-webhook] Erreur de traitement:', error);
     // On retourne 200 pour éviter que Stripe ré-essaie en boucle en cas de bug non-critique
-    return new Response(JSON.stringify({ received: true, warning: error.message }), {
+    return new Response(JSON.stringify({ received: true, warning: msg }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

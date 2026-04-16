@@ -56,7 +56,7 @@ export const useAuthStore = create<AuthState>()(
         // 1. Charger les données du business
         const { data: business, error: bizError } = await supabase
           .from('businesses')
-          .select('id, name, business_type')
+          .select('id, name, business_type, trial_ends_at, subscription_status')
           .eq('owner_id', authUser.id)
           .single();
 
@@ -70,6 +70,8 @@ export const useAuthStore = create<AuthState>()(
               businessDomain: null,
               businessId: null,
               subscription: null,
+              trialEndsAt: null,
+              subscriptionStatus: 'trial',
             },
             isAuthenticated: true,
             isDemo: false,
@@ -100,6 +102,8 @@ export const useAuthStore = create<AuthState>()(
             businessDomain: business.business_type,
             businessId: business.id,
             subscription: userSubscription,
+            trialEndsAt: business.trial_ends_at,
+            subscriptionStatus: business.subscription_status ?? 'trial',
           },
           isAuthenticated: true,
           isDemo: false,
@@ -160,6 +164,8 @@ export const useAuthStore = create<AuthState>()(
             businessDomain: 'Restauration',
             businessId: 'demo-business-id',
             subscription: null,
+            trialEndsAt: new Date(Date.now() + 11 * 24 * 60 * 60 * 1000).toISOString(),
+            subscriptionStatus: 'trial',
           },
           isAuthenticated: true,
           isDemo: true,

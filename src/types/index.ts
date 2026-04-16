@@ -1,7 +1,7 @@
 // Statut d'abonnement de l'utilisateur (depuis la table `subscriptions`)
 export interface UserSubscription {
-  plan: 'trial' | 'monthly' | 'annual' | 'pro' | null;
-  status: 'active' | 'cancelled' | 'past_due' | 'trialing' | null;
+  plan: 'starter' | 'business' | 'expert' | 'monthly' | 'pro' | null;
+  status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'unpaid' | null;
   currentPeriodEnd: string | null; // ISO date string
 }
 
@@ -11,8 +11,10 @@ export interface AppUser {
   email: string;
   companyName: string | null;    // Depuis businesses.name
   businessDomain: string | null; // Depuis businesses.business_type
-  businessId: string | null;     // UUID de businesses.id — critique pour les requêtes
-  subscription: UserSubscription | null; // Données d'abonnement Stripe
+  businessId: string | null;     // UUID de businesses.id
+  subscription: UserSubscription | null; 
+  trialEndsAt: string | null;    // Nouveau: date de fin d'essai
+  subscriptionStatus: 'trial' | 'active' | 'canceled' | 'past_due' | 'unpaid' | null;
 }
 
 // Un produit tel qu'exposé par useCatalogStore (prix TTC calculé côté client)

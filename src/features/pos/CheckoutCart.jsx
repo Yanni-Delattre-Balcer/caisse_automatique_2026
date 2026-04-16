@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@heroui/react';
-import { Plus, Minus, CreditCard, Banknote, ShoppingCart, ArrowLeft, CheckCircle2, Receipt, X, QrCode } from 'lucide-react';
+import { Plus, Minus, CreditCard, Banknote, ShoppingCart, ArrowLeft, CheckCircle2, Receipt, X, QrCode, Tag, Percent } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { useCartStore } from '../../store/useCartStore';
@@ -9,15 +9,19 @@ import { useToastStore } from '../../store/useToastStore';
 const RECEIPT_BASE_URL = window.location.origin;
 
 export function CheckoutCart() {
-  const { cart, updateItemQuantity, clearCart, getTotal, checkout } = useCartStore();
+  const { cart, updateItemQuantity, clearCart, getTotal, getRawTotal, getDiscountAmount, discount, applyDiscount, clearDiscount, checkout } = useCartStore();
   const addToast = useToastStore((s) => s.addToast);
   const total = getTotal();
+  const rawTotal = getRawTotal();
+  const discountAmount = getDiscountAmount();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastSale, setLastSale] = useState(null);
   const [cashGiven, setCashGiven] = useState('');
   const [showCashModal, setShowCashModal] = useState(false);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [customDiscount, setCustomDiscount] = useState('');
 
   const cashGivenNum = parseFloat(cashGiven) || 0;
   const change = cashGivenNum - total;
@@ -105,12 +109,42 @@ export function CheckoutCart() {
         )}
       </div>
 
-      <div className="h-px w-full bg-gray-100 dark:bg-white/10 my-6" />
+      <div className="h-px w-full bg-gray-100 dark:bg-white/10 my-4" />
+
+      {/* Remise rapide */}
+      <div className="flex items-center justify-between mb-4">
+        {discount ? (
+          <div className="flex items-center gap-2 text-sm">
+            <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+              <Tag className="w-3 h-3" />
+              {discount.type === 'percent' ? `-${discount.value}%` : `-${discount.value.toFixed(2)}€`}
+            </span>
+            <span className="text-gray-400 dark:text-gray-500 text-xs">−{discountAmount.toFixed(2)}€</span>
+          </div>
+        ) : (
+          <span className="text-xs text-gray-400 dark:text-gray-500">Aucune remise</span>
+        )}
+        <button
+          onClick={() => { setCustomDiscount(''); setShowDiscountModal(true); }}
+          disabled={cart.length === 0}
+          className="flex items-center gap-1.5 text-xs font-bold text-[#0055ff] hover:text-[#0044cc] disabled:text-gray-300 dark:disabled:text-gray-600 transition-colors"
+        >
+          <Percent className="w-3.5 h-3.5" />
+          {discount ? 'Modifier' : 'Remise'}
+        </button>
+      </div>
+
+      <div className="h-px w-full bg-gray-100 dark:bg-white/10 mb-4" />
 
       {/* Totals & Actions */}
       <div className="space-y-4">
         <div className="flex justify-between items-end mb-4">
-          <span className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-wider mb-1">Total</span>
+          <div>
+            <span className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-wider block mb-1">Total</span>
+            {discount && (
+              <span className="text-xs text-gray-400 line-through">{rawTotal.toFixed(2)}€</span>
+            )}
+          </div>
           <span className="text-[2.5rem] font-black tracking-tighter text-gray-900 dark:text-white leading-none">
             {total.toFixed(2)} <span className="text-2xl">€</span>
           </span>
@@ -228,6 +262,68 @@ export function CheckoutCart() {
               >
                 Valider le paiement
               </Button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Modal Remise ── */}
+      <AnimatePresence>
+        {showDiscountModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white dark:bg-[#1a1c1e] p-7 rounded-3xl shadow-2xl max-w-sm w-full border border-gray-100 dark:border-white/10">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Appliquer une remise</h3>
+                <button onClick={() => setShowDiscountModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Presets % */}
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Pourcentage</p>
+              <div className="grid grid-cols-4 gap-2 mb-5">
+                {[5, 10, 15, 20].map(pct => (
+                  <button key={pct} onClick={() => { applyDiscount('percent', pct); setShowDiscountModal(false); addToast({ type: 'success', message: `Remise de ${pct}% appliquée.` }); }}
+                    className={`py-3 rounded-xl font-black text-sm transition-all ${discount?.type === 'percent' && discount?.value === pct ? 'bg-[#0055ff] text-white' : 'bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-[#0055ff]/10 hover:text-[#0055ff]'}`}>
+                    -{pct}%
+                  </button>
+                ))}
+              </div>
+
+              {/* Montant fixe libre */}
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Montant fixe (€)</p>
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <input type="number" step="0.01" min="0" max={rawTotal}
+                    value={customDiscount}
+                    onChange={e => setCustomDiscount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#0055ff] transition-colors"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">€</span>
+                </div>
+                <button
+                  onClick={() => {
+                    const v = parseFloat(customDiscount);
+                    if (!v || v <= 0) { addToast({ type: 'warning', message: 'Montant invalide.' }); return; }
+                    if (v >= rawTotal) { addToast({ type: 'warning', message: 'Remise supérieure ou égale au total.' }); return; }
+                    applyDiscount('fixed', v);
+                    setShowDiscountModal(false);
+                    addToast({ type: 'success', message: `Remise de ${v.toFixed(2)}€ appliquée.` });
+                  }}
+                  className="px-4 py-3 bg-[#0055ff] text-white rounded-xl font-bold text-sm hover:bg-[#0044cc] transition-colors"
+                >
+                  OK
+                </button>
+              </div>
+
+              {discount && (
+                <button onClick={() => { clearDiscount(); setShowDiscountModal(false); addToast({ type: 'info', message: 'Remise supprimée.' }); }}
+                  className="w-full mt-4 py-2.5 text-sm font-bold text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors">
+                  Supprimer la remise
+                </button>
+              )}
             </motion.div>
           </div>
         )}

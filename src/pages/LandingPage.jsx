@@ -1,12 +1,14 @@
-import React, { useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useRef, useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import {
-  Smartphone, Zap, Cloud, Check, ShieldCheck, CalendarDays, Gem, Crown,
+  Smartphone, Zap, Cloud, Check, ShieldCheck, CalendarDays, Gem,
   Wifi, FileSpreadsheet, Clock, ArrowRight, Star, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import { redirectToCheckout } from '../lib/stripe';
 import { ContactForm } from '../components/ContactForm';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 // ── Utilitaire d'animation scroll ────────────────────────────────────────────
 function FadeIn({ children, delay = 0, className = '' }) {
@@ -26,133 +28,30 @@ function FadeIn({ children, delay = 0, className = '' }) {
 }
 
 // ── Plans tarifaires ──────────────────────────────────────────────────────────
-// ── Plans tarifaires ──────────────────────────────────────────────────────────
-const PLANS_MENSUEL = [
+const LANDING_PLANS = [
   {
-    id: 'solo',
+    id: 'hybrid-starter',
     icon: <CalendarDays className="w-5 h-5" />,
-    label: 'Solo',
-    sublabel: 'Indépendant (1 accès)',
-    price: '12',
+    label: 'Starter (Solo)',
+    price: '19',
     priceSuffix: '€/mois',
-    billing: '1 accès utilisateur',
-    badge: null,
+    usage: '1 accès, Inventaire, Exports',
     highlight: false,
-    cta: 'Démarrer gratuitement',
-    ctaLink: '/register',
-    features: [
-      'Scanner WebRTC illimité',
-      'Synchronisation Cloud temps réel',
-      'Export comptable mensuel',
-      'Support par email 5j/7',
-      'Idéal pour indépendants',
-    ],
-    disabledFeatures: [
-      'Multi-postes (Équipe)',
-      'Fidélité client avancée',
-    ],
+    badge: null,
+    priceId: import.meta.env.VITE_STRIPE_PRICE_STARTER || '',
+    planType: 'starter',
   },
   {
-    id: 'team',
+    id: 'hybrid-pro',
     icon: <Gem className="w-5 h-5" />,
-    label: 'Team 5',
-    sublabel: 'Petite équipe (2-5 accès)',
-    price: '24',
-    priceSuffix: '€/mois',
-    billing: 'Jusqu\'à 5 postes de caisse',
-    badge: 'POPULAIRE',
-    highlight: true,
-    cta: 'Démarrer gratuitement',
-    ctaLink: '/register',
-    features: [
-      'Tout du plan Solo',
-      'Jusqu\'à 5 postes de caisse',
-      'Statistiques d\'équipe',
-      'Support prioritaire 7j/7',
-      '2 mois offerts (annuel)',
-    ],
-    disabledFeatures: [
-      'Accès illimité (+10)',
-    ],
-  },
-  {
-    id: 'business',
-    icon: <Crown className="w-5 h-5" />,
-    label: 'Business 10',
-    sublabel: 'PME (6-10 accès)',
+    label: 'Business (Multi)',
     price: '39',
     priceSuffix: '€/mois',
-    billing: 'De 6 à 10 accès',
-    badge: null,
-    highlight: false,
-    cta: 'Démarrer gratuitement',
-    ctaLink: '/register',
-    features: [
-      'Tout du plan Team 5',
-      'Jusqu\'à 10 postes de caisse',
-      'Programme de fidélité client',
-      'Statistiques avancées & prédictions',
-      'Export expert-comptable PDF/CSV',
-      'Support dédié + onboarding',
-    ],
-    disabledFeatures: [],
-  },
-  {
-    id: 'entreprise',
-    icon: <ShieldCheck className="w-5 h-5" />,
-    label: 'Entreprise',
-    sublabel: 'Accès illimité (+10 accès)',
-    price: '49',
-    priceSuffix: '€/mois',
-    billing: 'Postes de caisse illimités',
-    badge: null,
-    highlight: false,
-    cta: 'Démarrer gratuitement',
-    ctaLink: '/register',
-    features: [
-      'Tout du plan Business 10',
-      'Postes de caisse illimités',
-      'Multi-boutiques (en option)',
-      'SLA Garanti 99.9%',
-      'Support téléphone dédié',
-    ],
-    disabledFeatures: [],
-  },
-];
-
-const PLANS_ANNUEL = [
-  { 
-    ...PLANS_MENSUEL[0], 
-    price: '120', 
-    priceSuffix: '€/an', 
-    priceNote: 'soit 10 €/mois — 2 mois offerts', 
-    oldPrice: '144',
-    billing: 'Facturé annuellement'
-  },
-  { 
-    ...PLANS_MENSUEL[1], 
-    price: '240', 
-    priceSuffix: '€/an', 
-    priceNote: 'soit 20 €/mois — 2 mois offerts', 
-    oldPrice: '288',
-    billing: 'Facturé annuellement',
-    badge: 'MEILLEURE VALEUR'
-  },
-  { 
-    ...PLANS_MENSUEL[2], 
-    price: '390', 
-    priceSuffix: '€/an', 
-    priceNote: 'soit 32,50 €/mois — 2 mois offerts', 
-    oldPrice: '468',
-    billing: 'Facturé annuellement'
-  },
-  { 
-    ...PLANS_MENSUEL[3], 
-    price: '490', 
-    priceSuffix: '€/an', 
-    priceNote: 'soit 40,83 €/mois — 2 mois offerts', 
-    oldPrice: '588',
-    billing: 'Facturé annuellement'
+    usage: '5 accès, Gestion des stocks, Dashboard',
+    highlight: true,
+    badge: 'Populaire',
+    priceId: import.meta.env.VITE_STRIPE_PRICE_BUSINESS || '',
+    planType: 'business',
   },
 ];
 
@@ -187,13 +86,30 @@ const FAQ = [
 // ── Page principale ───────────────────────────────────────────────────────────
 export function LandingPage() {
   const navigate = useNavigate();
-  const [billing, setBilling] = useState('mensuel');
+  const location = useLocation();
+  const { isAuthenticated } = useAuthStore();
   const [openFaq, setOpenFaq] = useState(null);
-  const plans = billing === 'annuel' ? PLANS_ANNUEL : PLANS_MENSUEL;
+  const [checkingOutPlanId, setCheckingOutPlanId] = useState(null);
+  const [checkoutError, setCheckoutError] = useState(null);
+
+  // Scroll vers l'ancre hash après montage (ex: navigation depuis /#pricing)
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace('#', '');
+      const el = document.getElementById(id);
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 80);
+      }
+    }
+  }, [location.hash]);
 
   const handleDemo = () => {
     useAuthStore.getState().loginAsDemo();
     navigate('/pos/quick');
+  };
+
+  const handleSelectPlan = async (priceId, planType) => {
+    navigate(`/checkout-summary?plan=${planType}`);
   };
 
   return (
@@ -254,7 +170,7 @@ export function LandingPage() {
               to="/register"
               className="bg-[#0055ff] text-white px-8 py-4 rounded-full font-bold tracking-wider uppercase text-sm shadow-xl shadow-blue-500/30 hover:bg-[#0044cc] hover:-translate-y-1 transition-all text-center"
             >
-              Démarrer gratuitement
+              Inscription
             </Link>
             <a
               href="#pricing"
@@ -266,7 +182,7 @@ export function LandingPage() {
 
           {/* Social proof micro */}
           <p className="mt-8 text-xs text-gray-400 font-medium tracking-wide">
-            Gratuit pour toujours jusqu'à 100 transactions/mois · Aucune carte requise
+            14 jours offerts pour tester de bout en bout · Sans engagement
           </p>
         </motion.div>
       </section>
@@ -443,172 +359,138 @@ export function LandingPage() {
 
       {/* ── SECTION PRICING ───────────────────────────────────────────────── */}
       <section id="pricing" className="py-24 px-6 bg-[#f8f9fa] relative z-20">
-        <div className="max-w-5xl mx-auto">
+        <style>{`
+          @keyframes border-sweep {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to   { transform: translate(-50%, -50%) rotate(360deg); }
+          }
+          .card-pro-wrapper:hover .card-sweep-ray {
+            animation: border-sweep 1.2s cubic-bezier(0.4, 0, 0.2, 1) 1 forwards;
+          }
+        `}</style>
+        <div className="max-w-4xl mx-auto">
 
-          <FadeIn className="text-center mb-6">
+          <FadeIn className="text-center mb-12">
             <span className="inline-block px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-bold tracking-widest uppercase mb-5">
               Tarification
             </span>
             <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
-              Commencez gratuit.
+              Testez à fond.
               <br />
-              <span className="text-gray-400">Grandissez à votre rythme.</span>
+              <span className="text-gray-400">Abonnez-vous si ça marche.</span>
             </h2>
             <p className="mt-4 text-gray-500 text-lg font-medium max-w-xl mx-auto">
-              Un plan gratuit permanent — pas un essai. Vous montez en plan quand <em>vous</em> en avez besoin.
+              L'outil complet est à vous pendant 14 jours offerts. Sans bridage.
             </p>
           </FadeIn>
 
-          {/* Toggle mensuel / annuel */}
-          <FadeIn delay={0.1} className="flex justify-center mb-12">
-            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white border border-gray-200 shadow-sm">
-              <button
-                onClick={() => setBilling('mensuel')}
-                className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${
-                  billing === 'mensuel'
-                    ? 'bg-[#0055ff] text-white shadow'
-                    : 'text-gray-500 hover:text-gray-900'
-                }`}
-              >
-                Mensuel
-              </button>
-              <button
-                onClick={() => setBilling('annuel')}
-                className={`px-5 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-2 ${
-                  billing === 'annuel'
-                    ? 'bg-[#0055ff] text-white shadow'
-                    : 'text-gray-500 hover:text-gray-900'
-                }`}
-              >
-                Annuel
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                  billing === 'annuel' ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'
-                }`}>
-                  −2 mois
-                </span>
-              </button>
+          {/* Bandeau erreur checkout */}
+          {checkoutError && (
+            <div className="max-w-3xl mx-auto mb-6 flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-medium">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{checkoutError}</span>
             </div>
-          </FadeIn>
+          )}
 
           {/* Cartes plans */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-            {plans.map((plan, i) => (
-              <FadeIn key={plan.id + billing} delay={i * 0.1}>
-                <div
-                  className={`relative rounded-2xl bg-white flex flex-col transition-all duration-200 ${
-                    plan.highlight
-                      ? 'border-2 border-[#0099ff] shadow-xl shadow-blue-500/10 -mt-3'
-                      : 'border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300'
-                  }`}
-                >
-                  {plan.badge && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+          <div className="grid sm:grid-cols-2 gap-8 max-w-3xl mx-auto items-center">
+            {LANDING_PLANS.map((plan, i) => (
+              <FadeIn key={plan.id} delay={i * 0.1}>
+                {plan.highlight ? (
+                  /* ── Card Pro : contour bleu + sweep lumineux au hover ── */
+                  <div className="relative pt-5">
+                    {/* Badge Populaire */}
+                    <div className="absolute top-5 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
                       <span className="bg-[#0099ff] text-white text-[11px] font-black tracking-widest uppercase px-4 py-1.5 rounded-full shadow-md whitespace-nowrap">
                         {plan.badge}
                       </span>
                     </div>
-                  )}
-
-                  <div className="p-7 pt-8 flex-1 flex flex-col">
-                    {/* En-tête */}
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={plan.highlight ? 'text-[#0099ff]' : 'text-gray-500'}>
-                        {plan.icon}
-                      </span>
-                      <span className="text-base font-bold text-gray-900">{plan.label}</span>
-                    </div>
-                    <p className="text-xs text-gray-400 font-medium mb-4">{plan.sublabel}</p>
-
-                    {/* Prix */}
-                    <div className="mb-1">
-                      <div className="flex items-baseline gap-2 flex-wrap">
-                        <span className="text-5xl font-black tracking-tighter text-gray-900">
-                          {plan.price}
-                        </span>
-                        <span className="text-gray-500 font-medium text-sm">{plan.priceSuffix}</span>
-                        {plan.oldPrice && (
-                          <span className="text-gray-400 text-sm line-through font-medium">
-                            {plan.oldPrice} €
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-gray-400 text-sm mt-0.5">{plan.billing}</p>
-                      {plan.priceNote && (
-                        <p className={`text-sm font-bold mt-0.5 ${plan.highlight ? 'text-[#0099ff]' : 'text-gray-400'}`}>
-                          {plan.priceNote}
-                        </p>
-                      )}
-                    </div>
-
-                    <hr className="my-5 border-gray-100" />
-
-                    {/* Features actives */}
-                    <ul className="space-y-2.5 flex-1">
-                      {plan.features.map((f) => (
-                        <li key={f} className="flex items-start gap-3 text-sm">
+                    {/* Wrapper border sweep — overflow hidden pour clipper le rayon */}
+                    <div
+                      className="card-pro-wrapper relative rounded-2xl overflow-hidden p-[2px] group transition-shadow duration-300 hover:shadow-[0_0_60px_rgba(0,153,255,0.4)]"
+                      style={{ background: '#0099ff' }}
+                    >
+                      {/* Rayon de lumière blanche qui fait le tour */}
+                      <div
+                        className="card-sweep-ray pointer-events-none absolute left-1/2 top-1/2 w-[300%] h-[300%]"
+                        style={{
+                          background: 'conic-gradient(from 0deg, transparent 0%, transparent 38%, rgba(255,255,255,0.92) 46%, white 50%, rgba(255,255,255,0.92) 54%, transparent 62%, transparent 100%)',
+                          transform: 'translate(-50%, -50%) rotate(0deg)',
+                        }}
+                      />
+                      {/* Carte intérieure blanche */}
+                      <div className="relative z-10 rounded-[14px] bg-white p-7">
+                        <div className="flex items-center gap-2 mb-5">
+                          <span className="text-[#0099ff]">{plan.icon}</span>
+                          <span className="text-base font-bold text-gray-900">{plan.label}</span>
+                        </div>
+                        <div className="flex items-baseline gap-2 mb-1">
+                          <span className="text-5xl font-black tracking-tighter text-gray-900">{plan.price}</span>
+                          <span className="text-gray-500 font-medium text-sm">{plan.priceSuffix}</span>
+                        </div>
+                        <p className="text-green-600 text-xs font-bold mt-2">14 jours offerts inclus</p>
+                        <hr className="my-5 border-gray-100" />
+                        <div className="flex items-start gap-2 text-sm font-medium text-gray-700 mb-8">
                           <Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                          <span className="text-gray-700 font-medium">{f}</span>
-                        </li>
-                      ))}
-                      {plan.disabledFeatures && plan.disabledFeatures.map((f) => (
-                        <li key={f} className="flex items-start gap-3 text-sm opacity-35">
-                          <Check className="w-4 h-4 text-gray-300 shrink-0 mt-0.5" />
-                          <span className="text-gray-400 font-medium">{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {/* CTA */}
-                    <div className="mt-7 flex flex-col gap-2">
-                      <Link
-                        to={plan.ctaLink}
-                        className={`w-full text-center font-bold py-3 rounded-xl text-sm uppercase tracking-wider transition-all ${
-                          plan.highlight
-                            ? 'bg-[#0099ff] hover:bg-[#007acc] text-white shadow-md hover:-translate-y-0.5'
-                            : plan.id === 'solo'
-                            ? 'bg-gray-900 hover:bg-black text-white shadow-sm hover:-translate-y-0.5'
-                            : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200'
-                        }`}
-                      >
-                        {plan.cta}
-                      </Link>
-                      <p className="text-center text-xs text-gray-400">
-                        Déjà un compte ?{' '}
-                        <Link to="/login" className="text-[#0099ff] hover:underline font-semibold">
-                          Se connecter
-                        </Link>
-                      </p>
+                          <span>{plan.usage}</span>
+                        </div>
+                        <button
+                          onClick={() => handleSelectPlan(plan.priceId, plan.planType)}
+                          disabled={checkingOutPlanId === plan.planType}
+                          className="w-full font-bold py-3 rounded-xl text-sm uppercase tracking-wider bg-[#0099ff] hover:bg-[#007acc] text-white shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-60 flex items-center justify-center gap-2"
+                        >
+                          {checkingOutPlanId === plan.planType
+                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                            : 'Choisir ce plan'}
+                        </button>
+                        <p className="text-center text-xs text-gray-400 mt-2">
+                          Déjà inscrit ?{' '}
+                          <Link to="/login" className="text-[#0099ff] hover:underline font-semibold">
+                            Connexion
+                          </Link>
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  /* ── Card Starter : standard ── */
+                  <div className="relative rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-7">
+                    <div className="flex items-center gap-2 mb-5">
+                      <span className="text-gray-500">{plan.icon}</span>
+                      <span className="text-base font-bold text-gray-900">{plan.label}</span>
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <span className="text-5xl font-black tracking-tighter text-gray-900">{plan.price}</span>
+                      <span className="text-gray-500 font-medium text-sm">{plan.priceSuffix}</span>
+                    </div>
+                    <p className="text-green-600 text-xs font-bold mt-2">14 jours offerts inclus</p>
+                    <hr className="my-5 border-gray-100" />
+                    <div className="flex items-start gap-2 text-sm font-medium text-gray-700 mb-8">
+                      <Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                      <span>{plan.usage}</span>
+                    </div>
+                    <button
+                      onClick={() => handleSelectPlan(plan.priceId, plan.planType)}
+                      disabled={checkingOutPlanId === plan.planType}
+                      className="w-full font-bold py-3 rounded-xl text-sm uppercase tracking-wider bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                    >
+                      {checkingOutPlanId === plan.planType
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : 'Choisir ce plan'}
+                    </button>
+                    <p className="text-center text-xs text-gray-400 mt-2">
+                      Déjà inscrit ?{' '}
+                      <Link to="/login" className="text-[#0099ff] hover:underline font-semibold">
+                            Connexion
+                      </Link>
+                    </p>
+                  </div>
+                )}
               </FadeIn>
             ))}
           </div>
 
-          {/* Reformulations-prix */}
-          <FadeIn delay={0.2} className="mt-14 grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-            {[
-              {
-                quote: "19 €/mois, c'est moins que 15 minutes de vos calculs en fin de mois.",
-                sub: 'vs. votre temps',
-              },
-              {
-                quote: "Une douchette coûte 150 €. Avec Heryze, vous économisez ça dès le premier mois.",
-                sub: 'vs. le matériel',
-              },
-              {
-                quote: "Une heure chez votre expert-comptable coûte 80–120 €. Heryze lui mâche le travail.",
-                sub: 'vs. votre comptable',
-              },
-            ].map((r) => (
-              <div key={r.sub} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                <p className="text-sm text-gray-700 font-semibold leading-snug italic mb-2">"{r.quote}"</p>
-                <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">{r.sub}</span>
-              </div>
-            ))}
-          </FadeIn>
-
-          <p className="text-center text-gray-400 text-sm font-medium mt-8">
+          <p className="text-center text-gray-400 text-sm font-medium mt-12">
             Pas de frais cachés. Export de vos données disponible à tout moment.{' '}
             <span className="font-bold text-gray-500">Vous ne serez jamais bloqué.</span>
           </p>
@@ -695,7 +577,7 @@ export function LandingPage() {
                 to="/register"
                 className="bg-white text-[#0055ff] px-9 py-4 rounded-full font-black tracking-wider uppercase text-sm shadow-2xl hover:-translate-y-1 transition-all text-center"
               >
-                Démarrer gratuitement
+                Inscription
               </Link>
             </div>
           </FadeIn>

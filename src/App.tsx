@@ -22,7 +22,10 @@ import { ReceiptPage } from './pages/ReceiptPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { InventoryPage } from './pages/InventoryPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { OnboardingPage } from './pages/OnboardingPage';
 import { RemoteScannerView } from './features/scanner/RemoteScannerView';
+import { CheckoutSummaryPage } from './pages/CheckoutSummaryPage';
+import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
 
 export default function App() {
   const initializeAuth = useAuthStore((state) => state.initialize);
@@ -49,11 +52,18 @@ export default function App() {
       {/* Ticket public — sans authentification */}
       <Route path="/receipt/:saleId" element={<ReceiptPage />} />
 
+      {/* Onboarding post-inscription — standalone, pas de sidebar */}
+      <Route path="/onboarding" element={<OnboardingPage />} />
+
       {/* Authentification */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Route>
+
+      {/* Tunnel d'Abonnement */}
+      <Route path="/checkout-summary" element={<CheckoutSummaryPage />} />
+      <Route path="/payment-success" element={<PaymentSuccessPage />} />
 
       {/* Interface POS (Caissiers & Admins) */}
       <Route element={<DashboardLayout />}>

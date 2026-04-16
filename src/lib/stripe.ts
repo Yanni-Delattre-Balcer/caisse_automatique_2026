@@ -35,18 +35,39 @@ export const redirectToCheckout = async (priceId: string, planType: string) => {
     throw new Error('VITE_STRIPE_CHECKOUT_URL non configurée dans le .env');
   }
 
-  const response = await fetch(checkoutUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify({ priceId, planType }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+  let response: Response;
+  try {
+    response = await fetch(checkoutUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Runtime Supabase authentifié via anon key (HS256)
+        'apikey': anonKey,
+        'Authorization': `Bearer ${anonKey}`,
+        // JWT utilisateur passé dans un header custom pour éviter le rejet ES256
+        'x-user-token': token,
+      },
+      body: JSON.stringify({ priceId, planType }),
+      signal: controller.signal,
+    });
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('La requête a expiré (15s). Vérifiez que la Edge Function Supabase est bien déployée.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Erreur inconnue' }));
-    throw new Error(error.error || 'Erreur lors de la création de la session de paiement.');
+    const body = await response.json().catch(() => null);
+    const message = body?.error || body?.message || `Erreur HTTP ${response.status}`;
+    throw new Error(message);
   }
 
   const { url } = await response.json();
@@ -55,6 +76,6 @@ export const redirectToCheckout = async (priceId: string, planType: string) => {
     throw new Error('URL de paiement manquante dans la réponse.');
   }
 
-  // Redirection vers la page de paiement Stripe
+  // Redirection vers la page de paiement Stripe (même onglet — évite les popup blockers)
   window.location.href = url;
 };

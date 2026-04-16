@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ShoppingCart, Package, Settings, Smartphone, Utensils, LogOut, Sun, Moon, Search, Zap, BarChart3, Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { Outlet, NavLink, useNavigate, Link } from "react-router-dom";
+import { LayoutDashboard, ShoppingCart, Package, Settings, Smartphone, Utensils, LogOut, Sun, Moon, Search, Zap, BarChart3, Wifi, WifiOff, RefreshCw, CreditCard } from "lucide-react";
 import { useAuthStore } from '../store/useAuthStore';
 import { useCatalogStore } from '../store/useCatalogStore';
 import { useConfigStore } from '../store/useConfigStore';
 import { useCartStore } from '../store/useCartStore';
+import { HardWall } from '../components/HardWall';
+import { AlertTriangle } from 'lucide-react';
 
 export function DashboardLayout() {
   const navigate = useNavigate();
@@ -67,7 +69,18 @@ export function DashboardLayout() {
     { name: "Paramètres", path: "/settings", icon: <Settings className="w-5 h-5" /> },
   ];
 
+  // Logique de verrouillage Trial (Claude's logic)
+  const isTrialActive = user.subscriptionStatus === 'trial' || !user.subscriptionStatus;
+  const trialEnds = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
+  const isExpired = trialEnds ? trialEnds < new Date() : false;
+  const isLocked = isTrialActive && isExpired && !isDemo;
+
+  const daysRemaining = trialEnds 
+    ? Math.max(0, Math.ceil((trialEnds.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
   return (
+    <>
     <div className="flex h-screen bg-[#f8f9fa] dark:bg-[#151515] text-gray-900 dark:text-gray-100 overflow-hidden font-sans transition-colors duration-300">
       {/* Rail Sidebar */}
       <aside className="relative z-20 w-[72px] bg-white/70 dark:bg-[#1e1e1e]/70 backdrop-blur-md border-r border-gray-200 dark:border-white/10 shadow-sm flex flex-col items-center py-6 transition-colors duration-300">
@@ -126,8 +139,17 @@ export function DashboardLayout() {
 
           {/* User & Logout */}
           <div className="flex flex-col items-center gap-3">
-            <div title={user.companyName} className="w-10 h-10 rounded-full bg-linear-to-tr from-[#00f2ff] to-[#0055ff] flex items-center justify-center text-white text-sm font-bold shadow-md shadow-blue-500/20">
-              {user.companyName.substring(0,2).toUpperCase()}
+             {/* Badge Essai discret */}
+             {isTrialActive && !isExpired && (
+              <div title={`Essai : ${daysRemaining} jours restants`} className="flex flex-col items-center gap-1 mb-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                <span className="text-[10px] font-black text-blue-500 uppercase tracking-tighter">
+                  {daysRemaining}j
+                </span>
+              </div>
+            )}
+            <div title={user.companyName ?? user.email} className="w-10 h-10 rounded-full bg-linear-to-tr from-[#00f2ff] to-[#0055ff] flex items-center justify-center text-white text-sm font-bold shadow-md shadow-blue-500/20">
+              {(user.companyName ?? user.email ?? 'US').substring(0, 2).toUpperCase()}
             </div>
             <button
               onClick={() => { logout(); navigate('/'); }}
@@ -152,13 +174,25 @@ export function DashboardLayout() {
             <span>Caisse en ligne &middot; {user.companyName}</span>
           </div>
 
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Rechercher..."
-              className="w-full bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-white/10 rounded-full py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-[#0055ff]/50 transition-shadow text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
-            />
+          <div className="flex items-center gap-4">
+             {isTrialActive && !isExpired && (
+                <Link
+                  to="/#pricing"
+                  className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-md shadow-blue-500/20 transition-all hover:scale-105 flex items-center gap-2"
+                >
+                  <CreditCard className="w-3 h-3" />
+                  S'abonner
+                </Link>
+             )}
+
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                className="w-full bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-white/10 rounded-full py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-[#0055ff]/50 transition-shadow text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              />
+            </div>
           </div>
         </header>
 
@@ -168,5 +202,7 @@ export function DashboardLayout() {
         </div>
       </main>
     </div>
+    {isLocked && <HardWall />}
+    </>
   );
 }

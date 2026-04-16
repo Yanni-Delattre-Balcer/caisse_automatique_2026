@@ -11,16 +11,25 @@ import { useAuthStore } from './useAuthStore';
 import { useCatalogStore } from './useCatalogStore';
 import type { CartItem, SalePayload } from '../types';
 
+interface Discount {
+  type: 'percent' | 'fixed';
+  value: number;
+}
+
 interface CartState {
   cart: CartItem[];
   client: string | null;
-  discounts: unknown[];
+  discount: Discount | null;
   paymentMethods: unknown[];
   addItem: (product: CartItem) => void;
   removeItem: (productId: string) => void;
   updateItemQuantity: (productId: string, quantity: number) => void;
   setClient: (client: string | null) => void;
+  applyDiscount: (type: 'percent' | 'fixed', value: number) => void;
+  clearDiscount: () => void;
   clearCart: () => void;
+  getRawTotal: () => number;
+  getDiscountAmount: () => number;
   getTotal: () => number;
   checkout: (paymentMethod: string) => Promise<SalePayload>;
   syncOfflineQueue: () => Promise<void>;
@@ -85,7 +94,7 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       cart: [],
       client: null,
-      discounts: [],
+      discount: null,
       paymentMethods: [],
 
       addItem: (product: CartItem) => {
@@ -121,14 +130,36 @@ export const useCartStore = create<CartState>()(
 
       setClient: (client: string | null) => set({ client }),
 
-      clearCart: () =>
-        set({ cart: [], client: null, discounts: [], paymentMethods: [] }),
+      applyDiscount: (type: 'percent' | 'fixed', value: number) =>
+        set({ discount: { type, value } }),
 
-      getTotal: () => {
+      clearDiscount: () => set({ discount: null }),
+
+      clearCart: () =>
+        set({ cart: [], client: null, discount: null, paymentMethods: [] }),
+
+      getRawTotal: () => {
         const state = get();
         return state.cart.reduce(
           (total, item) => total + item.price * item.quantity,
           0
+        );
+      },
+
+      getDiscountAmount: () => {
+        const state = get();
+        if (!state.discount) return 0;
+        const raw = state.getRawTotal();
+        if (state.discount.type === 'percent') {
+          return parseFloat(((raw * state.discount.value) / 100).toFixed(2));
+        }
+        return Math.min(state.discount.value, raw);
+      },
+
+      getTotal: () => {
+        const state = get();
+        return parseFloat(
+          Math.max(0, state.getRawTotal() - state.getDiscountAmount()).toFixed(2)
         );
       },
 

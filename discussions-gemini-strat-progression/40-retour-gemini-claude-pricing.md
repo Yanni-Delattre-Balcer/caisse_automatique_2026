@@ -23,10 +23,14 @@ L'idée étant de proposer aux entreprises que nous allons démarcher dans la ph
 
 ---
 
-## 2. Stratégie de Bêta-Test (Votre "Étude de Marché")
+## 2. Stratégie de Bêta-Test et Acquisition ("L'Essai Gratuit Sécurisé")
 
-Votre idée d'aller voir les entreprises directement est la meilleure possible. Voici comment l'optimiser pour qu'elle devienne une machine à convertir :
+L'objectif est d'attirer les clients sans utiliser le terme dévalorisant de "gratuité" lors du tunnel d'inscription, mais plutôt en garantissant une période d'essai de 7 jours (annoncée discrètement sur la grille tarifaire).
 
+*   **Tunnel d'inscription neutre :** Remplacement formel des boutons "Essayer gratuitement" et "Se connecter" par **"Inscription"** et **"Connexion"**.
+*   **Les 7 Jours d'Essai :** Lors de l'inscription initiale, aucune carte bancaire n'est demandée. L'utilisateur a accès au produit instantanément et dispose de 7 jours pour tester le Dashboard de bout en bout en conditions réelles. Un compteur de jours restants est affiché dans son espace personnel.
+*   **Le Hard Wall (Le mur de paiement) :** À J+7, le logiciel se **bloque complètement**. L'écran n'accepte plus d'actions autres que de se diriger vers le paiement de l'abonnement.
+*   **Éthique et Réversibilité :** Même lorsque l'écran est bloqué, l'utilisateur a toujours la possibilité d'exporter ses données gracieusement pour ne pas perdre son travail de la semaine, et/ou de supprimer son compte s'il ne souhaite finalement pas s'engager.
 *   **Le deal "Fondateur" :** Aux premières entreprises rencontrées, proposez une offre imbattable : *"Si vous nous aidez à améliorer le produit pendant la bêta, on vous offre 1 an à -50%."*
 *   **Le questionnaire :** Ne demandez pas *"Quel prix voulez-vous payer ?"* (les gens répondent toujours le moins cher possible). Demandez : **"Combien de temps gagnez-vous par jour avec cet outil ?"** Si l'outil fait gagner 1h/jour à un patron, il vaut bien plus que 19 €.
 

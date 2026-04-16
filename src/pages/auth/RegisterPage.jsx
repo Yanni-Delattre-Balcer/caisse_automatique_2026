@@ -28,7 +28,7 @@ export function RegisterPage() {
     setLoading(true);
     try {
       await register(formData.email, formData.password, formData.companyName, formData.domain);
-      navigate('/pos');
+      navigate('/onboarding');
     } catch (err) {
       setError(err.message);
       setLoading(false);

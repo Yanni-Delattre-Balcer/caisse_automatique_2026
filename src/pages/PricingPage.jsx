@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, Download, ShieldCheck, CalendarDays, Gem, Crown, Loader2, Utensils, LayoutGrid } from 'lucide-react';
+import { Check, CalendarDays, Gem, Crown, Loader2, Utensils, AlertCircle } from 'lucide-react';
 import { redirectToCheckout } from '../lib/stripe';
 import { useAuthStore } from '../store/useAuthStore';
 
 // ──────────────────────────────────────────────────
 // Données des Modèles
 // ──────────────────────────────────────────────────
+
+// Price IDs lus depuis .env — doivent correspondre aux produits créés dans Stripe Dashboard
+const PRICE = {
+  starter: 'price_mock_starter',
+  business: 'price_mock_business',
+  expert: 'price_mock_expert',
+  monthly: 'price_mock_starter',
+  pro: 'price_mock_business',
+};
 
 const HYBRID_PLANS = [
   {
@@ -16,6 +25,8 @@ const HYBRID_PLANS = [
     usage: '1 accès, Inventaire, Exports',
     highlight: false,
     icon: <CalendarDays className="w-5 h-5 text-blue-500" />,
+    priceId: PRICE.monthly,
+    planType: 'monthly',
   },
   {
     id: 'hybrid-pro',
@@ -24,6 +35,8 @@ const HYBRID_PLANS = [
     usage: '5 accès, Gestion des stocks, Dashboard',
     highlight: true,
     icon: <Gem className="w-5 h-5 text-blue-600" />,
+    priceId: PRICE.pro,
+    planType: 'pro',
   }
 ];
 
@@ -36,6 +49,8 @@ const FLOW_PLANS = [
     feature: '1 seul point de vente',
     desc: 'Psychologiquement indolore, parfait pour débuter.',
     icon: <CalendarDays className="w-5 h-5" />,
+    priceId: PRICE.starter,
+    planType: 'starter',
   },
   {
     id: 'flow-business',
@@ -45,6 +60,8 @@ const FLOW_PLANS = [
     feature: 'Multi-postes / Accès simultanés',
     desc: 'Deux fois moins cher que la concurrence.',
     icon: <Gem className="w-5 h-5" />,
+    priceId: PRICE.business,
+    planType: 'business',
   },
   {
     id: 'flow-expert',
@@ -54,6 +71,8 @@ const FLOW_PLANS = [
     feature: 'Plan de salle & Imprimante cuisine',
     desc: 'Le sauveur de rentabilité pour les restaurateurs.',
     icon: <Crown className="w-5 h-5" />,
+    priceId: PRICE.expert,
+    planType: 'expert',
   }
 ];
 
@@ -70,14 +89,15 @@ const MODULES = [
 // ──────────────────────────────────────────────────
 // Sous-composant Carte
 // ──────────────────────────────────────────────────
-function PricingCard({ plan, isAnnual, type = 'default' }) {
+function PricingCard({ plan, isAnnual, onSelect, isLoading }) {
   const displayPrice = isAnnual ? Math.floor(plan.price * 10) : plan.price;
   const suffix = isAnnual ? '€/an' : '€/mois';
-  
+  const missingPriceId = !plan.priceId;
+
   return (
     <div className={`relative rounded-2xl bg-white p-7 border transition-all duration-200 ${
-      plan.highlight 
-        ? 'border-2 border-blue-500 shadow-xl -mt-2' 
+      plan.highlight
+        ? 'border-2 border-blue-500 shadow-xl -mt-2'
         : 'border-gray-200 shadow-sm hover:shadow-md'
     }`}>
       {plan.badge && (
@@ -87,7 +107,7 @@ function PricingCard({ plan, isAnnual, type = 'default' }) {
           </span>
         </div>
       )}
-      
+
       <div className="flex items-center gap-2 mb-4">
         {plan.icon}
         <span className="font-bold text-gray-900">{plan.label}</span>
@@ -123,13 +143,24 @@ function PricingCard({ plan, isAnnual, type = 'default' }) {
         {plan.desc && <p className="text-xs text-gray-500 leading-relaxed font-medium">{plan.desc}</p>}
       </div>
 
-      <button className={`w-full py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-        plan.highlight 
-          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700' 
-          : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-      }`}>
-        Choisir ce plan
-      </button>
+      {missingPriceId ? (
+        <div className="w-full py-2.5 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 border border-amber-100 flex items-center justify-center gap-2">
+          <AlertCircle className="w-3.5 h-3.5" />
+          Price ID manquant dans .env
+        </div>
+      ) : (
+        <button
+          onClick={() => onSelect(plan.priceId, plan.planType)}
+          disabled={isLoading}
+          className={`w-full py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+            plan.highlight
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-60'
+              : 'bg-gray-100 text-gray-800 hover:bg-gray-200 disabled:opacity-60'
+          }`}
+        >
+          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Choisir ce plan'}
+        </button>
+      )}
     </div>
   );
 }
@@ -138,8 +169,27 @@ function PricingCard({ plan, isAnnual, type = 'default' }) {
 // Composant Principal
 // ──────────────────────────────────────────────────
 export function PricingPage() {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
   const [billing, setBilling] = useState('mensuel');
+  const [checkingOutPlanId, setCheckingOutPlanId] = useState(null);
+  const [checkoutError, setCheckoutError] = useState(null);
   const isAnnual = billing === 'annuel';
+
+  const handleSelect = async (priceId, planType) => {
+    if (!isAuthenticated) {
+      navigate('/register');
+      return;
+    }
+    setCheckingOutPlanId(planType);
+    setCheckoutError(null);
+    try {
+      await redirectToCheckout(priceId, planType);
+    } catch (err) {
+      setCheckoutError(err.message);
+      setCheckingOutPlanId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#fcfcfc] font-sans pb-24">
@@ -177,8 +227,18 @@ export function PricingPage() {
         </div>
       </header>
 
+      {/* Bandeau erreur checkout */}
+      {checkoutError && (
+        <div className="max-w-2xl mx-auto px-6 mb-4">
+          <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-medium">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{checkoutError}</span>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-6 space-y-24">
-        
+
         {/* ── Section 1 : Hybrid ──────────────── */}
         <section>
           <div className="flex items-center gap-4 mb-10">
@@ -188,7 +248,13 @@ export function PricingPage() {
           </div>
           <div className="grid sm:grid-cols-2 lg:max-w-3xl mx-auto gap-8">
             {HYBRID_PLANS.map(plan => (
-              <PricingCard key={plan.id} plan={plan} isAnnual={isAnnual} />
+              <PricingCard
+                key={plan.id}
+                plan={plan}
+                isAnnual={isAnnual}
+                onSelect={handleSelect}
+                isLoading={checkingOutPlanId === plan.planType}
+              />
             ))}
           </div>
         </section>
@@ -212,7 +278,7 @@ export function PricingPage() {
                   <p className="text-xs font-bold text-amber-600">+{mod.price}€ / mois</p>
                 </div>
                 <button className="px-4 py-2 rounded-lg bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider hover:bg-amber-600 transition-colors">
-                  Ajouter
+                  Bientôt
                 </button>
               </div>
             ))}
@@ -228,7 +294,13 @@ export function PricingPage() {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {FLOW_PLANS.map(plan => (
-              <PricingCard key={plan.id} plan={plan} isAnnual={isAnnual} />
+              <PricingCard
+                key={plan.id}
+                plan={plan}
+                isAnnual={isAnnual}
+                onSelect={handleSelect}
+                isLoading={checkingOutPlanId === plan.planType}
+              />
             ))}
           </div>
         </section>
