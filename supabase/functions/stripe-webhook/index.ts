@@ -34,7 +34,7 @@ async function upsertSubscription(
         business_id: businessId,
         stripe_customer_id: data.stripeCustomerId,
         stripe_subscription_id: data.stripeSubscriptionId,
-        plan: data.plan || 'monthly',
+        plan: data.plan || 'starter',
         status: data.status || 'active',
         current_period_end: data.currentPeriodEnd?.toISOString() || null,
         updated_at: new Date().toISOString(),
@@ -48,18 +48,12 @@ async function upsertSubscription(
   }
 }
 
-// Helper : Déterminer le plan depuis le priceId
 function getPlanFromPriceId(priceId: string): string {
-  const PRICE_MAP: Record<string, string> = {
-    [Deno.env.get('STRIPE_PRICE_MONTHLY') || '']: 'monthly',
-    [Deno.env.get('STRIPE_PRICE_ANNUAL') || '']: 'annual',
-    [Deno.env.get('STRIPE_PRICE_PRO') || '']: 'pro',
-    // Alias nommés par tier métier (Flow pricing)
-    [Deno.env.get('STRIPE_PRICE_STARTER') || '']: 'starter',
-    [Deno.env.get('STRIPE_PRICE_BUSINESS') || '']: 'business',
-    [Deno.env.get('STRIPE_PRICE_EXPERT') || '']: 'expert',
-  };
-  return PRICE_MAP[priceId] || 'monthly';
+  const starterPriceId  = Deno.env.get('STRIPE_PRICE_STARTER')  || '';
+  const businessPriceId = Deno.env.get('STRIPE_PRICE_BUSINESS') || '';
+  if (starterPriceId  && priceId === starterPriceId)  return 'starter';
+  if (businessPriceId && priceId === businessPriceId) return 'business';
+  return 'starter';
 }
 
 serve(async (req) => {

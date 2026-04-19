@@ -1,6 +1,6 @@
 # 🧪 Scénarios de Test — Heryze MVP (Pré-Bêta)
 
-> **Date de mise à jour** : 2026-04-10  
+> **Date de mise à jour** : 2026-04-16 (v2 — 1er paiement Stripe validé)
 > **Comment tester** : Lancer `npm run dev`, ouvrir `https://localhost:5177` (HTTPS requis pour PWA/caméra).  
 > **Testeurs** : Deux navigateurs / deux comptes suffisent pour les tests multi-tenant.
 
@@ -33,13 +33,27 @@
 | Paramètres commerce (SIRET, TVA, caissier) | `/settings` | ✅ |
 | Isolation données multi-tenant (RLS) | Automatique | ✅ |
 
+**✅ Ajouté depuis le 16/04/2026 :**
+| Fonctionnalité | Page / Fichier | État |
+| :--- | :--- | :--- |
+| Tunnel abonnement Stripe complet (checkout → webhook → DB) | `/checkout-summary`, Edge Functions | ✅ **1er paiement validé** |
+| Page récapitulatif avant paiement (SAS transparence) | `/checkout-summary` | ✅ |
+| Page succès paiement avec polling webhook | `/payment-success` | ⚠️ Partiel — bug condition polling (voir doc 48) |
+| HardWall fin d'essai (blocage UI + export données) | `HardWall.jsx` | ✅ |
+| Badge profil connecté dans navbar landing | `LandingLayout.jsx` | ✅ |
+| Scroll vers `#pricing` depuis liens internes | `LandingPage.jsx` | ✅ |
+| Trial 14 jours + trigger SQL automatique | `businesses.trial_ends_at` | ✅ |
+| Table `subscriptions` + synchronisation webhook | Supabase | ✅ |
+
 **⚠️ Non encore implémenté :**
 - Raccourcis clavier (`/` chercher, `Entrée` payer, `Esc` annuler)
 - Page Tables de restauration (`/tables` — nav visible pour Restauration mais route absente)
 - Export Z-Caisse au format PDF
 - Ticket par email (Resend)
 - Chaînage cryptographique NF525
-- Feature gating Stripe actif (useSubscription retourne `true` partout — intentionnel)
+- Feature gating Stripe actif (HardWall actif, mais `useSubscription` non branché partout)
+- Page `/payment-success` : polling corrigé (bug condition — voir doc 48)
+- Mapping plan `starter`/`business` dans le webhook (retourne `monthly` — voir doc 47)
 
 ---
 
@@ -280,16 +294,20 @@ ALTER TABLE subscriptions ADD CONSTRAINT subscriptions_plan_check
 | 11.3 | Aller sur `/pricing` avec un `VITE_STRIPE_PRICE_STARTER` **vide** dans `.env` | Badge orange "Price ID manquant dans .env" à la place du bouton |
 | 11.4 | Aller sur `/pricing` avec tous les Price IDs renseignés, authentifié | Tous les boutons "Choisir ce plan" sont actifs |
 
-### 11b. Flux de souscription (carte réussie)
+### 11b. Flux de souscription (carte réussie) — ✅ VALIDÉ le 16/04/2026
 
 | # | Action | Résultat attendu |
 | :--- | :--- | :--- |
-| 11.5 | Cliquer **"Choisir ce plan"** sur le plan Starter | Spinner "Choisir ce plan" pendant 1–2s, puis redirection vers Stripe Checkout |
-| 11.6 | Vérifier la page Stripe Checkout | Libellé correct (ex: "Heryze Pro Mensuel"), montant = 19 € |
-| 11.7 | Remplir : carte `4242 4242 4242 4242`, date `12/29`, CVC `123`, CP `75001` | Champs valides, bouton "S'abonner" actif |
-| 11.8 | Cliquer **"S'abonner"** | Traitement Stripe, puis redirection vers `/dashboard?payment=success` |
-| 11.9 | Vérifier Supabase → Table `subscriptions` | Ligne avec `status='active'`, `plan='starter'`, `current_period_end` dans ~30 jours |
-| 11.10 | Vérifier Supabase → Table `subscriptions` colonne `stripe_customer_id` | ID Stripe présent (commence par `cus_`) |
+| 11.5 | Depuis `/` ou dashboard, cliquer **"S'abonner"** | Redirection vers `/#pricing` avec scroll automatique vers les plans |
+| 11.6 | Cliquer **"Souscrire"** sur le plan Starter | Redirection vers `/checkout-summary?plan=starter` |
+| 11.7 | Vérifier la page `/checkout-summary` | Récapitulatif plan, promesse transparence, date de fin d'essai affiché |
+| 11.8 | Cliquer **"Sécuriser mon compte (0€)"** | Redirection vers Stripe Checkout dans le **même onglet** |
+| 11.9 | Vérifier la page Stripe Checkout | "Essayez Heryze Starter — 14 jours gratuits, puis 19€/mois", email pré-rempli |
+| 11.10 | Remplir : carte `4242 4242 4242 4242`, date `12/29`, CVC `123` | Champs valides, bouton "Démarrer la période d'essai" actif |
+| 11.11 | Cliquer **"Démarrer la période d'essai"** | Traitement Stripe, redirection vers `/payment-success?session_id=cs_test_xxx` |
+| 11.12 | Vérifier Supabase → Table `subscriptions` | Ligne avec `status='active'`, `stripe_subscription_id` présent |
+| 11.13 | Vérifier Supabase → Table `businesses` | `subscription_status = 'active'` |
+| 11.14 | Vérifier Stripe → Webhooks → événements reçus | `checkout.session.completed` et `invoice.payment_succeeded` : **200 OK** |
 
 ### 11c. Flux de souscription (carte refusée)
 
@@ -372,11 +390,26 @@ ALTER TABLE subscriptions ADD CONSTRAINT subscriptions_plan_check
 | 🔴 | Boucle infinie mode démo au login | ✅ Corrigé (05/04) | `DashboardLayout.jsx`, `useAuthStore.ts` |
 | 🔴 | QR code ticket inaccessible sans connexion | ✅ Corrigé — SQL RLS anon à exécuter | `supabase/schema.sql` |
 | 🔴 | Contrainte `plan IN ('monthly')` bloquait webhook | ✅ Corrigé — SQL contrainte à exécuter | `supabase/schema.sql` |
+| 🔴 | Login "infini" après ajout colonnes manquantes Gemini | ✅ Corrigé (16/04) — crash `companyName.substring(null)` + SQL migration | `DashboardLayout.jsx`, `trial_setup.sql` |
+| 🔴 | Edge Function checkout — import Stripe incompatible Deno v2 | ✅ Corrigé (16/04) — `npm:stripe@17` | `stripe-checkout/index.ts` |
+| 🔴 | JWT ES256 rejeté par runtime Supabase | ✅ Corrigé (16/04) — header `x-user-token` custom | `stripe.ts`, `stripe-checkout/index.ts` |
+| 🟡 | Mapping plan webhook retourne `monthly` au lieu de `starter` | ⏳ À corriger | `stripe-webhook/index.ts` |
+| 🟡 | `PaymentSuccessPage` : condition polling incorrecte | ⏳ À corriger (doc 48) | `PaymentSuccessPage.jsx` |
 | 🟡 | Route `/tables` absente (lien mort Restauration) | ⏳ À implémenter | `App.tsx` |
 | 🟡 | Raccourcis clavier non implémentés | ⏳ Backlog | — |
 | 🟡 | Feature gating Stripe inactif (`useSubscription` tout à `true`) | ⏳ Intentionnel — à activer post-bêta | `src/hooks/useSubscription.ts` |
-| 🟢 | `import React` inutilisé dans DashboardLayout | ⚪ Cosmétique | `DashboardLayout.jsx` |
+| 🟢 | Texte brut en fin de `.env` (bloque CLI Supabase) | ⏳ À nettoyer | `.env` |
 
 ---
 
-*Dernière mise à jour : 2026-04-10 — Onboarding, remises, câblage Stripe, fix RLS receipt.*
+---
+
+## ✅ Historique des validations majeures
+
+| Date | Milestone |
+| :--- | :--- |
+| 2026-04-05 | Fix boucle infinie mode démo, onboarding, remises, fix RLS receipt |
+| 2026-04-10 | Câblage Stripe `/pricing`, PricingPage, Edge Functions (code) |
+| **2026-04-16** | **🎉 1er paiement Stripe test validé bout-en-bout** — checkout, webhook 200 OK, `subscriptions` enregistré |
+
+*Dernière mise à jour : 2026-04-16 (v2)*

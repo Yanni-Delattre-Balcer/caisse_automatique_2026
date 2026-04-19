@@ -38,6 +38,7 @@ export interface CartItem extends CatalogItem {
 export interface SalePayload {
   business_id: string;
   total_ttc: number;
+  discount_amount: number;
   payment_method: string;
   items: Array<{
     id: string;

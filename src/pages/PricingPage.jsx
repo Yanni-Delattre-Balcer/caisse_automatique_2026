@@ -8,13 +8,11 @@ import { useAuthStore } from '../store/useAuthStore';
 // Données des Modèles
 // ──────────────────────────────────────────────────
 
-// Price IDs lus depuis .env — doivent correspondre aux produits créés dans Stripe Dashboard
 const PRICE = {
-  starter: 'price_mock_starter',
-  business: 'price_mock_business',
-  expert: 'price_mock_expert',
-  monthly: 'price_mock_starter',
-  pro: 'price_mock_business',
+  starter:  import.meta.env.VITE_STRIPE_PRICE_STARTER  || '',
+  business: import.meta.env.VITE_STRIPE_PRICE_BUSINESS || '',
+  monthly:  import.meta.env.VITE_STRIPE_PRICE_STARTER  || '',
+  pro:      import.meta.env.VITE_STRIPE_PRICE_BUSINESS || '',
 };
 
 const HYBRID_PLANS = [

@@ -6,10 +6,16 @@ import { useCartStore } from './store/useCartStore';
 // Layouts
 import { LandingLayout } from './layouts/LandingLayout';
 import { AuthLayout } from './layouts/AuthLayout';
+import { LandingV2Layout } from './layouts/LandingV2Layout';
+import { NexusLayout } from './layouts/NexusLayout';
 import { DashboardLayout } from './layouts/DashboardLayout';
 
 // Pages
 import { LandingPage } from './pages/LandingPage';
+import { LandingPageV2 } from './pages/LandingPageV2';
+import { NexusPropPage } from './pages/NexusPropPage';
+import { HeryzePage } from './pages/HeryzePage';
+import { NexusLeadershipPage } from './pages/NexusLeadershipPage';
 import { PricingPage } from './pages/PricingPage';
 import { ContactPage } from './pages/ContactPage';
 import { AboutPage } from './pages/AboutPage';
@@ -41,12 +47,24 @@ export default function App() {
 
   return (
     <Routes>
-      {/* Vitrine Commerciale */}
+      {/* Vitrine Commerciale (Legacy) */}
       <Route element={<LandingLayout />}>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/old-landingpage" element={<LandingPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/about" element={<AboutPage />} />
+      </Route>
+
+      {/* Landing Page V2 — Apple Style Review */}
+      <Route element={<LandingV2Layout />}>
+        <Route path="/landing-v2" element={<LandingPageV2 />} />
+      </Route>
+
+      {/* Nexus Hub (New Home & Ecosystem) */}
+      <Route element={<NexusLayout />}>
+        <Route path="/nexus-prop" element={<NexusPropPage />} />
+        <Route path="/nexus-leadership" element={<NexusLeadershipPage />} />
+        <Route path="/" element={<HeryzePage />} />
       </Route>
 
       {/* Ticket public — sans authentification */}

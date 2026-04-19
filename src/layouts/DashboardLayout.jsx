@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useCatalogStore } from '../store/useCatalogStore';
 import { useConfigStore } from '../store/useConfigStore';
 import { useCartStore } from '../store/useCartStore';
+import { useToastStore } from '../store/useToastStore';
 import { HardWall } from '../components/HardWall';
 import { AlertTriangle } from 'lucide-react';
 
@@ -17,6 +18,8 @@ export function DashboardLayout() {
   );
   const { theme, toggleTheme } = useConfigStore();
   const syncOfflineQueue = useCartStore(state => state.syncOfflineQueue);
+  const offlineSalesCount = useCartStore(state => state.offlineSalesCount);
+  const addToast = useToastStore(state => state.addToast);
 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -26,8 +29,11 @@ export function DashboardLayout() {
     const handleOnline = async () => {
       setIsOnline(true);
       setIsSyncing(true);
-      await syncOfflineQueue().catch(() => {});
+      const synced = await syncOfflineQueue().catch(() => 0);
       setIsSyncing(false);
+      if (synced > 0) {
+        addToast({ type: 'success', message: `${synced} vente(s) synchronisée(s) avec succès.` });
+      }
     };
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
@@ -69,7 +75,7 @@ export function DashboardLayout() {
     { name: "Paramètres", path: "/settings", icon: <Settings className="w-5 h-5" /> },
   ];
 
-  // Logique de verrouillage Trial (Claude's logic)
+  // Logique de verrouillage Trial
   const isTrialActive = user.subscriptionStatus === 'trial' || !user.subscriptionStatus;
   const trialEnds = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
   const isExpired = trialEnds ? trialEnds < new Date() : false;
@@ -117,14 +123,23 @@ export function DashboardLayout() {
 
         <div className="flex flex-col items-center gap-4 mt-auto">
           {/* Sync Indicator */}
-          <div title={isOnline ? (isSyncing ? 'Synchronisation...' : 'En ligne') : 'Hors ligne'}
-            className="flex items-center justify-center w-10 h-10 rounded-full">
+          <div
+            title={!isOnline
+              ? `Hors ligne${offlineSalesCount > 0 ? ` — ${offlineSalesCount} vente(s) en attente` : ''}`
+              : isSyncing ? 'Synchronisation...' : 'En ligne'}
+            className="relative flex items-center justify-center w-10 h-10 rounded-full"
+          >
             {!isOnline ? (
               <WifiOff className="w-4 h-4 text-red-400" />
             ) : isSyncing ? (
               <RefreshCw className="w-4 h-4 text-amber-400 animate-spin" />
             ) : (
               <Wifi className="w-4 h-4 text-green-500" />
+            )}
+            {offlineSalesCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full text-white text-[9px] font-black flex items-center justify-center shadow-sm">
+                {offlineSalesCount > 9 ? '9+' : offlineSalesCount}
+              </span>
             )}
           </div>
 

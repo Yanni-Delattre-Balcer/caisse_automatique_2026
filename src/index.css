@@ -1,4 +1,25 @@
-/* CSS reset or empty */
+/* Apple-style typography and spacing refinements */
+@layer utilities {
+  .tracking-tighter-apple {
+    letter-spacing: -0.04em;
+  }
+  
+  .glass-light {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .font-black {
+    font-weight: 900;
+  }
+
+  /* Smooth scroll for narrative navigation */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -6,6 +27,8 @@
 body {
   margin: 0;
   padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 input,

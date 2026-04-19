@@ -21,6 +21,7 @@ interface CartState {
   client: string | null;
   discount: Discount | null;
   paymentMethods: unknown[];
+  offlineSalesCount: number;
   addItem: (product: CartItem) => void;
   removeItem: (productId: string) => void;
   updateItemQuantity: (productId: string, quantity: number) => void;
@@ -32,7 +33,7 @@ interface CartState {
   getDiscountAmount: () => number;
   getTotal: () => number;
   checkout: (paymentMethod: string) => Promise<SalePayload>;
-  syncOfflineQueue: () => Promise<void>;
+  syncOfflineQueue: () => Promise<number>;
 }
 
 const OFFLINE_QUEUE_PREFIX = 'offline_sale_';
@@ -67,19 +68,21 @@ const persistSaleToSupabase = async (salePayload: SalePayload): Promise<void> =>
   // Le Realtime répercutera les changements de stock dans useCatalogStore automatiquement
 };
 
-const flushOfflineQueue = async (): Promise<void> => {
+const flushOfflineQueue = async (): Promise<number> => {
   const allKeys = await idbKeys();
   const offlineKeys = (allKeys as string[]).filter((k) =>
     k.startsWith(OFFLINE_QUEUE_PREFIX)
   );
-  if (offlineKeys.length === 0) return;
+  if (offlineKeys.length === 0) return 0;
 
+  let synced = 0;
   for (const key of offlineKeys) {
     const salePayload = await idbGet<SalePayload>(key);
     try {
       if (salePayload) {
         await persistSaleToSupabase(salePayload);
         await idbDel(key);
+        synced++;
       }
     } catch (e) {
       const err = e as Error;
@@ -87,6 +90,7 @@ const flushOfflineQueue = async (): Promise<void> => {
       break; // Préserver l'ordre chronologique — s'arrêter au premier échec
     }
   }
+  return synced;
 };
 
 export const useCartStore = create<CartState>()(
@@ -96,6 +100,7 @@ export const useCartStore = create<CartState>()(
       client: null,
       discount: null,
       paymentMethods: [],
+      offlineSalesCount: 0,
 
       addItem: (product: CartItem) => {
         set((state) => {
@@ -173,6 +178,7 @@ export const useCartStore = create<CartState>()(
         const salePayload: SalePayload = {
           business_id: user.businessId,
           total_ttc: parseFloat(state.getTotal().toFixed(2)),
+          discount_amount: parseFloat(state.getDiscountAmount().toFixed(2)),
           payment_method: paymentMethod,
           items: state.cart.map((i) => ({
             id: i.id,
@@ -193,10 +199,12 @@ export const useCartStore = create<CartState>()(
               err.message
             );
             await idbSet(`${OFFLINE_QUEUE_PREFIX}${Date.now()}`, salePayload);
+            set((s) => ({ offlineSalesCount: s.offlineSalesCount + 1 }));
           }
         } else {
           // Mode offline — empiler dans IndexedDB, sync au retour du réseau
           await idbSet(`${OFFLINE_QUEUE_PREFIX}${Date.now()}`, salePayload);
+          set((s) => ({ offlineSalesCount: s.offlineSalesCount + 1 }));
           console.info('[CartStore] Mode offline — vente en queue.');
         }
 
@@ -205,7 +213,12 @@ export const useCartStore = create<CartState>()(
       },
 
       syncOfflineQueue: async () => {
-        if (navigator.onLine) await flushOfflineQueue();
+        if (!navigator.onLine) return 0;
+        const synced = await flushOfflineQueue();
+        if (synced > 0) {
+          set((s) => ({ offlineSalesCount: Math.max(0, s.offlineSalesCount - synced) }));
+        }
+        return synced;
       },
     }),
     { name: 'cart-storage' }

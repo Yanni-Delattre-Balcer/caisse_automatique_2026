@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { Button } from '@heroui/react';
-import { Plus, Minus, CreditCard, Banknote, ShoppingCart, ArrowLeft, CheckCircle2, Receipt, X, QrCode, Tag, Percent } from 'lucide-react';
+import { Plus, Minus, CreditCard, Banknote, ShoppingCart, ArrowLeft, CheckCircle2, Receipt, X, QrCode, Tag, Percent, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { useCartStore } from '../../store/useCartStore';
 import { useToastStore } from '../../store/useToastStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { supabase } from '../../lib/supabaseClient';
 
 const RECEIPT_BASE_URL = window.location.origin;
+
+const SEND_RECEIPT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-receipt`;
 
 export function CheckoutCart() {
   const { cart, updateItemQuantity, clearCart, getTotal, getRawTotal, getDiscountAmount, discount, applyDiscount, clearDiscount, checkout } = useCartStore();
   const addToast = useToastStore((s) => s.addToast);
+  const { user } = useAuthStore();
   const total = getTotal();
   const rawTotal = getRawTotal();
   const discountAmount = getDiscountAmount();
@@ -22,6 +27,8 @@ export function CheckoutCart() {
   const [showCashModal, setShowCashModal] = useState(false);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [customDiscount, setCustomDiscount] = useState('');
+  const [receiptEmail, setReceiptEmail] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const cashGivenNum = parseFloat(cashGiven) || 0;
   const change = cashGivenNum - total;
@@ -55,6 +62,31 @@ export function CheckoutCart() {
   };
 
   const receiptUrl = lastSale?.id ? `${RECEIPT_BASE_URL}/receipt/${lastSale.id}` : null;
+
+  const handleSendEmail = async () => {
+    if (!receiptEmail || !lastSale) return;
+    setSendingEmail(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(SEND_RECEIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'x-user-token': session?.access_token ?? '',
+        },
+        body: JSON.stringify({ email: receiptEmail, sale: lastSale, companyName: user?.companyName }),
+      });
+      if (!res.ok) throw new Error();
+      addToast({ type: 'success', message: `Reçu envoyé à ${receiptEmail}` });
+      setReceiptEmail('');
+    } catch {
+      addToast({ type: 'error', message: "Échec de l'envoi du reçu." });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-[#1a1c1e] rounded-3xl border border-gray-100 dark:border-white/5 shadow-2xl shadow-gray-200/40 dark:shadow-none p-6">
@@ -350,6 +382,12 @@ export function CheckoutCart() {
                     <span className="font-bold text-gray-900 dark:text-white">{(item.price * item.quantity).toFixed(2)}€</span>
                   </div>
                 ))}
+                {lastSale.discount_amount > 0 && (
+                  <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
+                    <span className="font-medium flex items-center gap-1"><Tag className="w-3 h-3" /> Remise</span>
+                    <span className="font-bold">−{lastSale.discount_amount.toFixed(2)}€</span>
+                  </div>
+                )}
                 <div className="border-t border-gray-200 dark:border-white/10 pt-2 mt-2 flex justify-between">
                   <span className="font-bold text-gray-900 dark:text-white">Total TTC</span>
                   <span className="font-black text-lg text-[#0055ff]">{lastSale.total_ttc?.toFixed(2)}€</span>
@@ -369,7 +407,30 @@ export function CheckoutCart() {
                 </div>
               )}
 
-              <button onClick={() => setLastSale(null)}
+              {/* Envoi email */}
+              <div className="border-t border-gray-100 dark:border-white/10 pt-4 mb-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Mail className="w-3 h-3" /> Envoyer par email
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={receiptEmail}
+                    onChange={(e) => setReceiptEmail(e.target.value)}
+                    placeholder="email@client.com"
+                    className="flex-1 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:border-[#0055ff] transition-colors"
+                  />
+                  <button
+                    onClick={handleSendEmail}
+                    disabled={sendingEmail || !receiptEmail}
+                    className="px-4 py-2 bg-[#0055ff] hover:bg-[#0044cc] text-white rounded-xl text-sm font-bold disabled:opacity-40 transition-colors"
+                  >
+                    {sendingEmail ? '...' : 'Envoyer'}
+                  </button>
+                </div>
+              </div>
+
+              <button onClick={() => { setLastSale(null); setReceiptEmail(''); }}
                 className="w-full py-3 bg-[#0055ff] hover:bg-[#0044cc] text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2">
                 <Receipt className="w-4 h-4" />
                 Fermer le reçu
