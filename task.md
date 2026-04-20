@@ -1,0 +1,12 @@
+- [x] Initial Plan approved
+- [x] UI/UX Refinements (Updated)
+  - [x] Redesign Hub Mobile Menu Overlay (`NexusLayout.jsx`)
+    - [x] Fix background readability (solid white)
+  - [x] Update Heryze Sub-Navbar (`HeryzePage.jsx`)
+    - [x] Fix "X exists" error (Missing import)
+    - [x] Fix background readability (solid white)
+  - [x] Adjust "L'expérience Heryze" Carousel (`HeryzePage.jsx`)
+    - [x] Reduce title margin by 50%
+    - [x] Move "En savoir plus" under title
+    - [x] Implement storytelling teaser (3-4 lines with fade)
+- [x] Verification & Final Polish

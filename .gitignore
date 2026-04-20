@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+discussions-gemini-strat-progression/56-nexus-leadership-content.md
+discussions-gemini-strat-progression/57-synapso.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -33,22 +33,27 @@ export const useAuthStore = create<AuthState>()(
       // Appelé une seule fois dans App.tsx au montage
       initialize: async () => {
         set({ isLoading: true });
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session?.user) {
-          await get()._hydrateUserFromSession(session.user);
-        }
-        // Écouter les changements de session (refresh token, logout externe, autre onglet)
-        supabase.auth.onAuthStateChange(async (_event, session) => {
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
           if (session?.user) {
             await get()._hydrateUserFromSession(session.user);
-          } else if (!get().isDemo) {
-            // Ne pas écraser le mode démo — la session Supabase est vide en mode démo par design
-            set({ user: null, isAuthenticated: false, isDemo: false });
           }
-        });
-        set({ isLoading: false });
+          // Écouter les changements de session (refresh token, logout externe, autre onglet)
+          supabase.auth.onAuthStateChange(async (_event, session) => {
+            if (session?.user) {
+              await get()._hydrateUserFromSession(session.user);
+            } else if (!get().isDemo) {
+              // Ne pas écraser le mode démo — la session Supabase est vide en mode démo par design
+              set({ user: null, isAuthenticated: false, isDemo: false });
+            }
+          });
+        } catch (error) {
+          console.error('[AuthStore] Initialization failed:', error);
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
       // Méthode privée — ne jamais appeler depuis l'UI
@@ -112,16 +117,18 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email: string, password: string) => {
         set({ isLoading: true });
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) {
-          set({ isLoading: false });
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (error) throw error;
+          await get()._hydrateUserFromSession(data.user);
+        } catch (error: any) {
           throw new Error(error.message);
+        } finally {
+          set({ isLoading: false });
         }
-        await get()._hydrateUserFromSession(data.user);
-        set({ isLoading: false });
       },
 
       register: async (
@@ -131,23 +138,26 @@ export const useAuthStore = create<AuthState>()(
         businessDomain: string
       ) => {
         set({ isLoading: true });
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error || !data.user) {
+        try {
+          const { data, error } = await supabase.auth.signUp({ email, password });
+          if (error || !data.user) {
+            throw new Error(error?.message || 'Erreur lors de l’inscription');
+          }
+          // Créer le commerce lié immédiatement après le compte
+          const { error: bizError } = await supabase.from('businesses').insert({
+            name: companyName,
+            owner_id: data.user.id,
+            business_type: businessDomain,
+          });
+          if (bizError) {
+            throw new Error('Compte créé mais erreur commerce : ' + bizError.message);
+          }
+          await get()._hydrateUserFromSession(data.user);
+        } catch (error: any) {
+          throw error;
+        } finally {
           set({ isLoading: false });
-          throw new Error(error?.message || 'Erreur lors de l’inscription');
         }
-        // Créer le commerce lié immédiatement après le compte
-        const { error: bizError } = await supabase.from('businesses').insert({
-          name: companyName,
-          owner_id: data.user.id,
-          business_type: businessDomain,
-        });
-        if (bizError) {
-          set({ isLoading: false });
-          throw new Error('Compte créé mais erreur commerce : ' + bizError.message);
-        }
-        await get()._hydrateUserFromSession(data.user);
-        set({ isLoading: false });
       },
 
       logout: async () => {

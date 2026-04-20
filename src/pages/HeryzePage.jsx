@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Check, ArrowRight, Smartphone, Zap, FileSpreadsheet, Wifi, Star, Cloud } from 'lucide-react';
+import { Check, ArrowRight, Smartphone, Zap, FileSpreadsheet, Wifi, Star, Cloud, ChevronDown, X, ShoppingCart } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
 // Assets
 import nexusHero from '../assets/nexus/nexus-hero.png';
@@ -17,6 +18,10 @@ import nexusLogo from '../assets/nexus/nexus-logo-black.png';
  * ProductNavbar - Floating 'pill' navigation for Heryze
  */
 function ProductNavbar({ isVisible }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -25,26 +30,131 @@ function ProductNavbar({ isVisible }) {
           animate={{ y: 0, opacity: 1, x: '-50%' }}
           exit={{ y: -20, opacity: 0, x: '-50%' }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed top-6 left-1/2 w-[92%] md:w-[90%] max-w-6xl h-16 bg-white/70 backdrop-blur-md rounded-full px-8 flex items-center justify-between z-[60] border border-blue-500/10 shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
+          className="fixed top-6 left-1/2 w-[92%] md:w-[90%] max-w-6xl h-16 bg-white/70 backdrop-blur-md rounded-full px-8 flex items-center justify-between z-[120] border border-blue-500/10 shadow-[0_8px_32px_rgba(0,0,0,0.05)] transition-all duration-500"
         >
-          {/* Left: Branding */}
-          <div className="flex items-center gap-3 px-6">
-            <img src={nexusLogo} alt="Nexus Logo" className="h-[27px] w-auto object-contain" />
-            <span className="text-xl font-bold tracking-tighter text-gray-900 font-inter">
-              Heryze
-            </span>
-          </div>
+          <div className="flex items-center justify-between w-full h-full">
+            {/* Left: Branding */}
+            <div className="flex items-center">
+              <span className="text-lg md:text-xl font-bold tracking-tighter text-gray-900 font-inter">
+                Heryze
+              </span>
+            </div>
 
-          {/* Right: Navigation + Action */}
-          <div className="flex items-center gap-8">
-            <div className="hidden md:flex items-center gap-6">
-              <a href="#presentation" className="text-[13px] font-semibold text-gray-500 hover:text-gray-900 transition-colors">Présentation</a>
-              <a href="#specs" className="text-[13px] font-semibold text-gray-400 cursor-not-allowed">Caractéristiques</a>
+            {/* Right: Actions & Toggle */}
+            <div className="flex items-center gap-3 md:gap-8">
+              {/* Desktop Links */}
+              <div className="hidden md:flex items-center gap-8">
+                <a href="#presentation" className="text-[13px] font-semibold text-gray-500 hover:text-gray-900 transition-colors">Présentation</a>
+                <a href="#experience" onClick={(e) => { e.preventDefault(); document.getElementById('experience')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-[13px] font-semibold text-gray-500 hover:text-gray-900 transition-colors">Caractéristiques</a>
+              </div>
+
+              {/* Mobile Chevron (Centered between text and button in mobile view) */}
+              <button 
+                onClick={() => setIsOpen(!isOpen)}
+                className="md:hidden p-2 hover:bg-gray-100/50 rounded-full transition-colors order-2"
+              >
+                <motion.div
+                  animate={{ rotate: isOpen ? 180 : 0 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <ChevronDown className="w-4 h-4 text-gray-900" />
+                </motion.div>
+              </button>
+
+              {/* Connexion / Lancer Button */}
+              <button 
+                onClick={() => {
+                  if (isAuthenticated) {
+                    navigate('/pos');
+                  } else {
+                    navigate('/login?redirect=/');
+                  }
+                }}
+                className="bg-[#0071e3] text-white px-4 md:px-5 py-1.5 md:py-2 rounded-full font-bold text-[12px] md:text-sm hover:bg-[#0077ed] transition-all order-3"
+              >
+                {isAuthenticated ? 'Lancer Heryze' : 'Connexion'}
+              </button>
             </div>
           </div>
+
         </motion.nav>
       )}
+
+      {/* Mobile Expanded Menu overlay style sync with NexusLayout - Moved outside to fix stacking context */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 top-0 left-0 w-full h-[100vh] bg-white z-[999] flex flex-col p-10 md:hidden"
+          >
+            <div className="flex items-center justify-between mb-12">
+              <span className="text-xl font-bold tracking-tighter text-gray-900 font-inter">Heryze</span>
+              <button onClick={() => setIsOpen(false)} className="p-2 -mr-2">
+                <X className="w-8 h-8 text-gray-900" />
+              </button>
+            </div>
+            <nav className="flex flex-col gap-8">
+              <a href="#presentation" onClick={() => setIsOpen(false)} className="text-4xl font-bold tracking-tight text-gray-900">Présentation</a>
+              <a href="#experience" onClick={() => setIsOpen(false)} className="text-4xl font-bold tracking-tight text-gray-900">Caractéristiques</a>
+              <a href="#store" onClick={() => setIsOpen(false)} className="text-4xl font-bold tracking-tight text-gray-900">Boutique Nexus</a>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
+  );
+}
+
+function ExperienceCard({ icon, color, title, description, badge, glowColor }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  return (
+    <div className="snap-center shrink-0 w-[72vw] md:w-[450px] glow-card relative p-[1px] rounded-[2.5rem] bg-gray-100 overflow-hidden group transition-all duration-500 hover:scale-[1.02]">
+      <div className="glow-ray absolute left-1/2 top-1/2 w-[200%] h-[200%] opacity-0 pointer-events-none"
+        style={{ background: `conic-gradient(from 0deg, transparent 0%, transparent 40%, ${glowColor} 50%, transparent 60%, transparent 100%)` }}
+      />
+      <div className="relative h-full bg-white rounded-[2.4rem] p-10 flex flex-col z-10">
+        <div className={`h-48 mb-8 flex items-center justify-center bg-${color}-50/50 rounded-3xl overflow-hidden relative`}>
+          <motion.div 
+            animate={{ opacity: [0.4, 1, 0.4] }} 
+            transition={{ duration: 2, repeat: Infinity }}
+            className={`bg-${color}-500/10 w-32 h-32 rounded-full absolute blur-3xl`} 
+          />
+          {icon}
+        </div>
+        <span className={`text-xs font-black uppercase tracking-widest text-${color}-600 mb-4`}>{badge}</span>
+        <h4 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 mb-4 leading-tight">{title}</h4>
+        
+        <button 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-2 font-bold text-[#0066cc] hover:opacity-70 transition-opacity mb-4"
+        >
+          <span>{isExpanded ? 'Réduire' : 'En savoir plus'}</span>
+          <motion.div animate={{ rotate: isExpanded ? 180 : 0 }}>
+            <ChevronDown className="w-4 h-4" />
+          </motion.div>
+        </button>
+
+        {/* Expandable Text - 100% Hidden by default */}
+        <div className="relative">
+          <motion.div 
+            initial={false}
+            animate={{ 
+              height: isExpanded ? 'auto' : '0px',
+              opacity: isExpanded ? 1 : 0
+            }}
+            className="overflow-hidden"
+          >
+            <p className="text-gray-500 font-medium leading-relaxed pt-2">
+              {description}
+            </p>
+          </motion.div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -68,6 +178,8 @@ function FadeIn({ children, delay = 0, className = '', y = 24 }) {
  * ProductHero - Monumental centered introduction for a product
  */
 function ProductHero({ title, subtitle, image, id, bgColor = "bg-white", titleRef }) {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
   return (
     <section id={id} className={`flex flex-col items-center pt-8 pb-32 overflow-hidden ${bgColor} relative`}>
       <AtmosphericBackground />
@@ -83,11 +195,14 @@ function ProductHero({ title, subtitle, image, id, bgColor = "bg-white", titleRe
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-3 items-center">
             {/* Bouton En savoir plus: Pilule bleue compacte */}
-            <button className="bg-[#0071e3] text-white px-5 py-2 rounded-full font-semibold text-sm hover:bg-[#0077ed] transition-all">
+            <button 
+              onClick={() => document.getElementById('presentation')?.scrollIntoView({ behavior: 'smooth' })}
+              className="bg-[#0071e3] text-white px-5 py-2 rounded-full font-semibold text-sm hover:bg-[#0077ed] transition-all"
+            >
               En savoir plus
             </button>
             
-            {/* Bouton Acheter: Taille alignée sur 'En savoir plus' et halo extérieur pur */}
+            {/* Bouton Démonstration / Lancer : Taille alignée sur 'En savoir plus' et halo extérieur pur */}
             <div className="relative group">
               {/* Le halo (Aura Nexus) - Émanation strictement extérieure */}
               <div className="absolute -inset-1 bg-blue-500/40 rounded-full blur-md opacity-20 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -95,10 +210,16 @@ function ProductHero({ title, subtitle, image, id, bgColor = "bg-white", titleRe
               <motion.button 
                 whileHover={{ y: -4 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                onClick={() => document.getElementById('store')?.scrollIntoView({ behavior: 'smooth' })}
-                className="relative px-5 py-2 rounded-full font-semibold text-sm border border-blue-600 text-blue-600 bg-white hover:bg-blue-600 hover:text-white transition-all duration-300 flex items-center justify-center min-w-[120px] z-10"
+                onClick={() => {
+                  if (isAuthenticated) {
+                    navigate('/pos');
+                  } else {
+                    document.getElementById('store')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="relative px-5 py-2 rounded-full font-semibold text-sm border border-blue-600 text-blue-600 bg-white hover:bg-blue-600 hover:text-white transition-all duration-300 flex items-center justify-center min-w-[140px] z-10"
               >
-                Acheter
+                {isAuthenticated ? 'Lancer Heryze' : 'Démonstration'}
               </motion.button>
             </div>
           </div>
@@ -229,7 +350,7 @@ export function HeryzePage() {
       </section>
 
       {/* 3. POINTS FORTS (Carousel Interactif) */}
-      <section className="py-40 bg-white">
+      <section id="experience" className="py-40 bg-white">
         <style>{`
           .snap-scroll-container::-webkit-scrollbar { display: none; }
           .snap-scroll-container { -ms-overflow-style: none; scrollbar-width: none; }
@@ -244,7 +365,7 @@ export function HeryzePage() {
           }
         `}</style>
 
-        <div className="px-6 md:px-12 lg:px-24 mb-16">
+        <div className="px-6 md:px-12 lg:px-24 mb-6">
           <FadeIn>
             <h3 className="text-4xl md:text-5xl font-black tracking-tight text-gray-900">
               L'expérience Heryze.
@@ -253,74 +374,32 @@ export function HeryzePage() {
         </div>
 
         <div className="snap-scroll-container flex overflow-x-auto snap-x snap-mandatory gap-8 px-6 md:px-12 lg:px-24 pb-12">
-          {/* Card 1: Offline */}
-          <div className="snap-center shrink-0 w-[85vw] md:w-[450px] glow-card relative p-[1px] rounded-[2.5rem] bg-gray-100 overflow-hidden group transition-all duration-500 hover:scale-[1.02]">
-            <div className="glow-ray absolute left-1/2 top-1/2 w-[200%] h-[200%] opacity-0 pointer-events-none"
-              style={{ background: 'conic-gradient(from 0deg, transparent 0%, transparent 40%, rgba(59,130,246,0.3) 50%, transparent 60%, transparent 100%)' }}
-            />
-            <div className="relative h-full bg-white rounded-[2.4rem] p-10 flex flex-col z-10">
-              <div className="h-48 mb-8 flex items-center justify-center bg-blue-50/50 rounded-3xl overflow-hidden relative">
-                <motion.div 
-                  animate={{ opacity: [0.4, 1, 0.4] }} 
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="bg-blue-500/10 w-32 h-32 rounded-full absolute blur-3xl" 
-                />
-                <Wifi className="w-20 h-20 text-blue-500 relative z-10" />
-              </div>
-              <span className="text-xs font-black uppercase tracking-widest text-[#0066cc] mb-4">La résilience offline</span>
-              <h4 className="text-4xl font-bold tracking-tight text-gray-900 mb-6 leading-tight">Le réseau tombe. Votre business, jamais.</h4>
-              <p className="text-gray-500 font-medium leading-relaxed mb-8 flex-grow">
-                "Heryze redéfinit le point de vente. Que vous soyez en ligne ou au milieu de nulle part sans connexion, votre business ne s'arrête jamais. Les ventes s'enregistrent localement et se synchronisent d'elles-mêmes dès que vous retrouvez le signal."
-              </p>
-              <a href="#" className="font-bold text-[#0066cc] hover:underline">En savoir plus →</a>
-            </div>
-          </div>
+          <ExperienceCard 
+            icon={<Wifi className="w-20 h-20 text-blue-500 relative z-10" />}
+            color="blue"
+            glowColor="rgba(59,130,246,0.3)"
+            badge="La résilience offline"
+            title="Le réseau tombe. Votre business, jamais."
+            description="“Heryze redéfinit le point de vente. Que vous soyez en ligne ou au milieu de nulle part sans connexion, votre business ne s'arrête jamais. Les ventes s'enregistrent localement et se synchronisent d'elles-mêmes dès que vous retrouvez le signal.”"
+          />
 
-          {/* Card 2: Scanner */}
-          <div className="snap-center shrink-0 w-[85vw] md:w-[450px] glow-card relative p-[1px] rounded-[2.5rem] bg-gray-100 overflow-hidden group transition-all duration-500 hover:scale-[1.02]">
-            <div className="glow-ray absolute left-1/2 top-1/2 w-[200%] h-[200%] opacity-0 pointer-events-none"
-              style={{ background: 'conic-gradient(from 0deg, transparent 0%, transparent 40%, rgba(139,92,246,0.3) 50%, transparent 60%, transparent 100%)' }}
-            />
-            <div className="relative h-full bg-white rounded-[2.4rem] p-10 flex flex-col z-10">
-              <div className="h-48 mb-8 flex items-center justify-center bg-purple-50/50 rounded-3xl overflow-hidden relative">
-                <motion.div 
-                   animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.6, 0.3] }}
-                   transition={{ duration: 3, repeat: Infinity }}
-                   className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-[2px] bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)] z-20" 
-                />
-                <Smartphone className="w-20 h-20 text-purple-500 relative z-10" />
-              </div>
-              <span className="text-xs font-black uppercase tracking-widest text-purple-600 mb-4">L'Économie Intelligente</span>
-              <h4 className="text-4xl font-bold tracking-tight text-gray-900 mb-6 leading-tight">Votre smartphone est votre meilleure douchette.</h4>
-              <p className="text-gray-500 font-medium leading-relaxed mb-8 flex-grow">
-                "Pourquoi acheter un scanner coûteux quand vous avez un outil ultra-puissant dans votre poche ? Grâce à la technologie WebRTC, la caméra de votre téléphone devient un scanner haute précision instantané."
-              </p>
-              <a href="#" className="font-bold text-purple-600 hover:underline">En savoir plus →</a>
-            </div>
-          </div>
+          <ExperienceCard 
+            icon={<Smartphone className="w-20 h-20 text-purple-500 relative z-10" />}
+            color="purple"
+            glowColor="rgba(139,92,246,0.3)"
+            badge="L'Économie Intelligente"
+            title="Votre smartphone est votre meilleure douchette."
+            description="“Pourquoi acheter un scanner coûteux quand vous avez un outil ultra-puissant dans votre poche ? Grâce à la technologie WebRTC, la caméra de votre téléphone devient un scanner haute précision instantané.”"
+          />
 
-          {/* Card 3: Accounting */}
-          <div className="snap-center shrink-0 w-[85vw] md:w-[450px] glow-card relative p-[1px] rounded-[2.5rem] bg-gray-100 overflow-hidden group transition-all duration-500 hover:scale-[1.02]">
-            <div className="glow-ray absolute left-1/2 top-1/2 w-[200%] h-[200%] opacity-0 pointer-events-none"
-              style={{ background: 'conic-gradient(from 0deg, transparent 0%, transparent 40%, rgba(16,185,129,0.3) 50%, transparent 60%, transparent 100%)' }}
-            />
-            <div className="relative h-full bg-white rounded-[2.4rem] p-10 flex flex-col z-10">
-              <div className="h-48 mb-8 flex items-center justify-center bg-emerald-50/50 rounded-3xl overflow-hidden relative">
-                <motion.div 
-                   animate={{ y: [-20, 20, -20], opacity: [0, 1, 0] }}
-                   transition={{ duration: 4, repeat: Infinity }}
-                   className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-100/50 to-transparent" 
-                />
-                <FileSpreadsheet className="w-20 h-20 text-emerald-500 relative z-10" />
-              </div>
-              <span className="text-xs font-black uppercase tracking-widest text-emerald-600 mb-4">La Sérénité Administrative</span>
-              <h4 className="text-4xl font-bold tracking-tight text-gray-900 mb-6 leading-tight">Votre comptable va vous adorer.</h4>
-              <p className="text-gray-500 font-medium leading-relaxed mb-8 flex-grow">
-                "Heryze automatise tout ce que vous détestez faire. Calcul de TVA, rapport Z de fin de journée, exports FEC prêts pour votre expert-comptable."
-              </p>
-              <a href="#" className="font-bold text-emerald-600 hover:underline">En savoir plus →</a>
-            </div>
-          </div>
+          <ExperienceCard 
+            icon={<FileSpreadsheet className="w-20 h-20 text-emerald-500 relative z-10" />}
+            color="emerald"
+            glowColor="rgba(16,185,129,0.3)"
+            badge="La Sérénité Administrative"
+            title="Votre comptable va vous adorer."
+            description="“Heryze automatise tout ce que vous détestez faire. Calcul de TVA, rapport Z de fin de journée, exports FEC prêts pour votre expert-comptable.”"
+          />
         </div>
       </section>
 
@@ -456,15 +535,31 @@ export function HeryzePage() {
         `}</style>
         
         <div className="max-w-5xl mx-auto">
-          <FadeIn className="text-center mb-24">
-            <h2 className="text-4xl md:text-7xl font-bold tracking-tight text-gray-900 mb-6">
+          {/* 1. Titre & Démo Immédiate */}
+          <FadeIn className="text-center mb-32 flex flex-col items-center">
+            <h2 className="text-4xl md:text-7xl font-bold tracking-tight text-gray-900 mb-12">
               Testez à fond.
-              <br />
-              <span className="text-gray-300">Abonnez-vous si ça marche.</span>
             </h2>
+            
+            <p className="text-xl md:text-3xl text-gray-900 font-bold mb-8">Envie de tester sans créer de compte ?</p>
+            <button
+              onClick={() => {
+                useAuthStore.getState().loginAsDemo();
+                navigate('/pos/quick');
+              }}
+              className="px-16 py-7 border-2 border-dashed border-blue-200 hover:border-blue-500 hover:bg-blue-50/50 text-blue-600 rounded-[2rem] font-black text-2xl md:text-3xl transition-all flex items-center gap-5 group shadow-xl shadow-blue-500/5 hover:scale-105 active:scale-95"
+            >
+              <Zap className="w-10 h-10 text-blue-500 group-hover:animate-pulse" />
+              Accéder au Mode Démo
+            </button>
           </FadeIn>
 
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          {/* 2. Transition vers Pricing */}
+          <FadeIn delay={0.2} className="text-center mt-60 mb-24">
+            <p className="text-2xl md:text-4xl text-gray-400 font-medium italic">Abonnez-vous si cela vous convient.</p>
+          </FadeIn>
+
+          <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
             {/* Plan Starter */}
             <FadeIn>
               <div className="relative rounded-[2.5rem] bg-gray-50 border border-gray-100 p-12 transition-all hover:scale-[1.02] duration-500 group">
@@ -526,7 +621,7 @@ export function HeryzePage() {
                     }}
                   />
                   
-                  {/* Contenu card */}
+                  {/* Nội dung card */}
                   <div className="relative z-10 bg-white rounded-[2.5rem] p-12">
                     <div className="flex items-center gap-3 mb-8">
                       <div className="w-10 h-10 rounded-2xl bg-blue-50 shadow-sm flex items-center justify-center text-blue-600">
@@ -574,18 +669,25 @@ export function HeryzePage() {
           <h2 className="text-4xl md:text-7xl font-bold tracking-tight mb-8">
             Heryze n'est pas une dépense, c'est un investissement dans la stabilité de votre commerce.
           </h2>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center mt-16">
+          <div className="flex flex-col items-center justify-center mt-16">
             {/* Bouton Premium avec Aura (Sync Nexus Universe) */}
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-blue-500/40 rounded-full blur-md opacity-20 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="relative group flex items-center justify-center">
+              {/* Le halo (Aura Nexus) - Émanation strictement extérieure */}
+              <div className="absolute -inset-1 bg-blue-500/40 rounded-full blur-md opacity-20 group-hover:opacity-100 transition-opacity duration-500 will-change-[opacity,filter]"></div>
               
               <motion.button 
                 whileHover={{ y: -4 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                onClick={() => document.getElementById('store')?.scrollIntoView({ behavior: 'smooth' })}
-                className="relative px-12 py-5 rounded-full font-black text-xl border border-blue-600 text-blue-600 bg-white hover:bg-blue-600 hover:text-white transition-all duration-300 flex items-center justify-center min-w-[240px] z-10"
+                onClick={() => {
+                  if (isAuthenticated) {
+                    navigate('/pos');
+                  } else {
+                    navigate('/login?redirect=/pos');
+                  }
+                }}
+                className="relative px-12 py-5 rounded-full font-black text-xl border border-blue-600 text-blue-600 bg-white hover:bg-blue-600 hover:text-white transition-colors duration-300 flex items-center justify-center min-w-[240px] z-10 will-change-transform"
               >
-                Découvrir la suite
+                Lancer Heryze
               </motion.button>
             </div>
           </div>

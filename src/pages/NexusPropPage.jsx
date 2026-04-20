@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ArrowRight, Smartphone, Zap, FileSpreadsheet, Wifi, Star, Cloud } from 'lucide-react';
 import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { useAuthStore } from '../store/useAuthStore';
 
 // Assets
 import nexusHero from '../assets/nexus/nexus-hero.png';
@@ -64,6 +65,8 @@ function AtmosphericBackground() {
  * ProductHero - Monumental centered introduction for a product
  */
 function ProductHero({ title, subtitle, image, id, bgColor = "bg-white" }) {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
   return (
     <section id={id} className={`flex flex-col items-center pt-8 pb-32 overflow-hidden ${bgColor} relative`}>
       <AtmosphericBackground />
@@ -83,7 +86,7 @@ function ProductHero({ title, subtitle, image, id, bgColor = "bg-white" }) {
               En savoir plus
             </button>
             
-            {/* Bouton Acheter: Taille alignée sur 'En savoir plus' et halo extérieur pur */}
+            {/* Bouton Connexion / Lancer : Taille alignée sur 'En savoir plus' et halo extérieur pur */}
             <div className="relative group">
               {/* Le halo (Aura Nexus) - Émanation strictement extérieure */}
               <div className="absolute -inset-1 bg-blue-500/40 rounded-full blur-md opacity-20 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -91,10 +94,16 @@ function ProductHero({ title, subtitle, image, id, bgColor = "bg-white" }) {
               <motion.button 
                 whileHover={{ y: -4 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                onClick={() => document.getElementById('store')?.scrollIntoView({ behavior: 'smooth' })}
-                className="relative px-5 py-2 rounded-full font-semibold text-sm border border-blue-600 text-blue-600 bg-white hover:bg-blue-600 hover:text-white transition-all duration-300 flex items-center justify-center min-w-[120px] z-10"
+                onClick={() => {
+                  if (isAuthenticated) {
+                    navigate('/pos');
+                  } else {
+                    navigate('/login?redirect=/nexus-prop');
+                  }
+                }}
+                className="relative px-5 py-2 rounded-full font-semibold text-sm border border-blue-600 text-blue-600 bg-white hover:bg-blue-600 hover:text-white transition-all duration-300 flex items-center justify-center min-w-[140px] z-10"
               >
-                Acheter
+                {isAuthenticated ? 'Lancer Heryze' : 'Connexion'}
               </motion.button>
             </div>
           </div>
@@ -364,16 +373,16 @@ export function NexusPropPage() {
           <p className="text-xl md:text-2xl text-gray-400 font-medium mb-8 max-w-2xl mx-auto">
             Plus qu'un outil, une nouvelle façon de voir votre commerce.
           </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+          <div className="flex flex-col items-center justify-center mt-12">
             {/* Bouton Acheter: Design Inscription-style (Style Heryze) */}
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-blue-500/40 rounded-full blur-md opacity-20 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="relative group flex items-center justify-center">
+              <div className="absolute -inset-1 bg-blue-500/40 rounded-full blur-md opacity-20 group-hover:opacity-100 transition-opacity duration-500 will-change-[opacity,filter]"></div>
               
               <motion.button 
                 whileHover={{ y: -4 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 onClick={() => document.getElementById('store')?.scrollIntoView({ behavior: 'smooth' })}
-                className="relative px-8 py-4 rounded-full font-black text-xl border border-blue-600 text-blue-600 bg-white hover:bg-blue-600 hover:text-white transition-all duration-300 flex items-center justify-center min-w-[200px] z-10"
+                className="relative px-8 py-4 rounded-full font-black text-xl border border-blue-600 text-blue-600 bg-white hover:bg-blue-600 hover:text-white transition-colors duration-300 flex items-center justify-center min-w-[200px] z-10 will-change-transform"
               >
                 Découvrir la suite
               </motion.button>

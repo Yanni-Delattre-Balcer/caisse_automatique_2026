@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const login = useAuthStore(state => state.login);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const redirectPath = searchParams.get('redirect') || '/pos';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,9 +18,9 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(formData.email, formData.password);
-      navigate('/pos');
+      navigate(redirectPath);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
       setLoading(false);
     }
   };
@@ -77,30 +80,10 @@ export function LoginPage() {
             {loading ? 'Connexion en cours...' : 'Se connecter'}
         </button>
 
-        <div className="relative flex items-center gap-4 my-4">
-            <div className="grow h-px bg-gray-100"></div>
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">OU</span>
-            <div className="grow h-px bg-gray-100"></div>
-        </div>
-
-        <button
-            type="button"
-            onClick={() => {
-                useAuthStore.getState().loginAsDemo();
-                navigate('/pos/quick');
-            }}
-            className="w-full py-4 border-2 border-gray-100 hover:border-blue-500/30 hover:bg-blue-50/30 text-gray-700 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 group"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            Accéder au Mode Démo
-        </button>
       </form>
 
       <p className="text-center text-sm text-gray-500 mt-8 font-medium">
-        Pas encore de compte ? <Link to="/register" className="text-[#0055ff] hover:underline font-bold">Créer un compte</Link>
+        Pas encore de compte ? <Link to={`/register?redirect=${encodeURIComponent(redirectPath)}`} className="text-[#0055ff] hover:underline font-bold">Créer un compte</Link>
       </p>
     </div>
   );
