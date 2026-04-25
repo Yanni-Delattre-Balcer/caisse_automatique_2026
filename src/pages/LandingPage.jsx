@@ -1,25 +1,85 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { motion, useInView } from 'framer-motion';
-import {
-  Smartphone, Zap, Cloud, Check, ShieldCheck, CalendarDays, Gem,
-  Wifi, FileSpreadsheet, Clock, ArrowRight, Star, ChevronDown, ChevronUp
-} from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { Check, ArrowRight, Smartphone, Zap, FileSpreadsheet, Wifi, Star, Cloud, ChevronDown, X, ShoppingCart } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
-import { redirectToCheckout } from '../lib/stripe';
-import { ContactForm } from '../components/ContactForm';
-import { Loader2, AlertCircle } from 'lucide-react';
 
-// ── Utilitaire d'animation scroll ────────────────────────────────────────────
-function FadeIn({ children, delay = 0, className = '' }) {
+// Assets
+import nexusHero from '../assets/nexus/nexus-hero.png';
+import synapseoVisual from '../assets/nexus/synapseo-visual.png';
+import synapseoDashboard from '../assets/nexus/synapseo-dashboard.png';
+import heryzePos from '../assets/nexus/heryze-pos.png';
+import heryzeMockup from '../assets/nexus/hero-mockup.png';
+import nexusLogo from '../assets/nexus/nexus-logo-black.png';
+
+// Components
+import { ProductNavbar } from '../components/ProductNavbar';
+
+// --- Components ---
+
+/**
+ * ProductNavbar - Floating 'pill' navigation for Heryze
+ */
+
+function ExperienceCard({ icon, color, title, description, badge, glowColor }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div className="snap-center shrink-0 w-[72vw] md:w-[450px] glow-card relative p-[1px] rounded-[2.5rem] bg-gray-100 overflow-hidden group transition-all duration-500 hover:scale-[1.02]">
+      <div className="glow-ray absolute left-1/2 top-1/2 w-[200%] h-[200%] opacity-0 pointer-events-none"
+        style={{ background: `conic-gradient(from 0deg, transparent 0%, transparent 40%, ${glowColor} 50%, transparent 60%, transparent 100%)` }}
+      />
+      <div className="relative h-full bg-white rounded-[2.4rem] p-10 flex flex-col z-10">
+        <div className={`h-48 mb-8 flex items-center justify-center bg-${color}-50/50 rounded-3xl overflow-hidden relative`}>
+          <motion.div
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className={`bg-${color}-500/10 w-32 h-32 rounded-full absolute blur-3xl`}
+          />
+          {icon}
+        </div>
+        <span className={`text-xs font-black uppercase tracking-widest text-${color}-600 mb-4`}>{badge}</span>
+        <h4 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 mb-4 leading-tight">{title}</h4>
+
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-2 font-bold text-[#0066cc] hover:opacity-70 transition-opacity mb-4"
+        >
+          <span>{isExpanded ? 'Réduire' : 'En savoir plus'}</span>
+          <motion.div animate={{ rotate: isExpanded ? 180 : 0 }}>
+            <ChevronDown className="w-4 h-4" />
+          </motion.div>
+        </button>
+
+        {/* Expandable Text - 100% Hidden by default */}
+        <div className="relative">
+          <motion.div
+            initial={false}
+            animate={{
+              height: isExpanded ? 'auto' : '0px',
+              opacity: isExpanded ? 1 : 0
+            }}
+            className="overflow-hidden"
+          >
+            <p className="text-gray-500 font-medium leading-relaxed pt-2">
+              {description}
+            </p>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FadeIn({ children, delay = 0, className = '', y = 24 }) {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-60px' });
+  const inView = useInView(ref, { once: true, margin: '-10% 0px -10% 0px' });
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 36 }}
+      initial={{ opacity: 0, y }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.65, delay, ease: 'easeOut' }}
+      transition={{ duration: 0.8, delay, ease: [0.21, 0.47, 0.32, 0.98] }}
       className={className}
     >
       {children}
@@ -27,278 +87,303 @@ function FadeIn({ children, delay = 0, className = '' }) {
   );
 }
 
-// ── Plans tarifaires ──────────────────────────────────────────────────────────
-const LANDING_PLANS = [
+/**
+ * ProductHero - Monumental centered introduction for a product
+ */
+function ProductHero({ title, subtitle, image, id, bgColor = "bg-white", titleRef }) {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+  return (
+    <section id={id} className={`flex flex-col items-center pt-8 pb-32 overflow-hidden ${bgColor} relative`}>
+      <AtmosphericBackground />
+
+      {/* Text Content (Top) */}
+      <div className="max-w-4xl px-6 mb-12 flex flex-col items-center text-center z-10">
+        <FadeIn className="space-y-4">
+          <h2 ref={titleRef} className="text-4xl md:text-6xl font-bold tracking-tighter text-gray-900 leading-tight text-balance font-inter">
+            {title}
+          </h2>
+          <p className="text-lg md:text-xl text-gray-400 font-medium max-w-xl mx-auto">
+            {subtitle}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-3 items-center">
+            {/* Bouton En savoir plus: Pilule bleue compacte */}
+            <button
+              onClick={() => document.getElementById('presentation')?.scrollIntoView({ behavior: 'smooth' })}
+              className="bg-[#0071e3] text-white px-5 py-2 rounded-full font-semibold text-sm hover:bg-[#0077ed] transition-all"
+            >
+              En savoir plus
+            </button>
+
+            {/* Bouton Démonstration / Lancer : Taille alignée sur 'En savoir plus' et halo extérieur pur */}
+            <div className="relative group">
+              {/* Le halo (Aura Nexus) - Émanation strictement extérieure */}
+              <div className="absolute -inset-1 bg-blue-500/40 rounded-full blur-md opacity-20 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+              <motion.button
+                whileHover={{ y: -4 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                onClick={() => {
+                  if (isAuthenticated) {
+                    navigate('/pos');
+                  } else {
+                    document.getElementById('store')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="relative px-5 py-2 rounded-full font-semibold text-sm border border-blue-600 text-blue-600 bg-white hover:bg-blue-600 hover:text-white transition-all duration-300 flex items-center justify-center min-w-[140px] z-10"
+              >
+                {isAuthenticated ? 'Lancer Heryze' : 'Démonstration'}
+              </motion.button>
+            </div>
+          </div>
+        </FadeIn>
+      </div>
+
+      {/* Immersive Panoramic Image (Bottom) - Smaller and airy */}
+      <FadeIn delay={0.2} y={30} className="w-full flex justify-center px-6 md:px-12 lg:px-24">
+        <div className="w-full h-auto flex justify-center">
+          <img
+            src={image}
+            alt={title}
+            className="w-full h-auto object-contain rounded-2xl md:rounded-3xl shadow-2xl"
+          />
+        </div>
+      </FadeIn>
+
+    </section>
+  );
+}
+
+const PRICING_PLANS = [
   {
-    id: 'hybrid-starter',
-    icon: <CalendarDays className="w-5 h-5" />,
-    label: 'Starter (Solo)',
+    id: 'starter',
+    label: 'Starter',
     price: '19',
-    priceSuffix: '€/mois',
-    usage: '1 accès, Inventaire, Exports',
+    usage: 'Idéal pour les indépendants',
     highlight: false,
-    badge: null,
-    priceId: import.meta.env.VITE_STRIPE_PRICE_STARTER || '',
     planType: 'starter',
   },
   {
-    id: 'hybrid-pro',
-    icon: <Gem className="w-5 h-5" />,
-    label: 'Business (Multi)',
+    id: 'business',
+    label: 'Business',
     price: '39',
-    priceSuffix: '€/mois',
-    usage: '5 accès, Gestion des stocks, Dashboard',
+    usage: 'La puissance de l\'écosystème Nexus',
     highlight: true,
     badge: 'Populaire',
-    priceId: import.meta.env.VITE_STRIPE_PRICE_BUSINESS || '',
     planType: 'business',
   },
 ];
 
-// ── FAQ ───────────────────────────────────────────────────────────────────────
-const FAQ = [
-  {
-    q: "Puis-je encaisser si mon Wi-Fi tombe en panne ?",
-    a: "Oui, c'est la raison d'être d'Heryze. Les ventes sont enregistrées localement dans votre navigateur (IndexedDB). Dès que la connexion revient, tout se synchronise automatiquement dans le Cloud, sans que vous fassiez quoi que ce soit."
-  },
-  {
-    q: "J'ai une douchette code-barre, est-ce compatible ?",
-    a: "Oui, les douchettes USB et Bluetooth fonctionnent comme un clavier. Mais avec Heryze, vous n'en avez plus besoin — la caméra de votre smartphone fait exactement le même travail, sans câble et sans achat. Économie directe : 100–200 €."
-  },
-  {
-    q: "Heryze remplace-t-il mon expert-comptable ?",
-    a: "Non, et nous ne le promettons jamais. Heryze génère les exports que votre comptable attend (FEC, résumé TVA, Z-caisse). C'est lui qui mâche le travail à votre place — votre comptable gagne du temps, vous aussi."
-  },
-  {
-    q: "Mes données sont-elles sécurisées ?",
-    a: "Vos données sont isolées par Row Level Security (RLS) côté Supabase — aucun autre commerçant ne peut voir les vôtres. Heryze est conçu pour la conformité NF525 : chaque vente est chaînée cryptographiquement, la certification formelle est en cours."
-  },
-  {
-    q: "Que se passe-t-il si je dépasse 100 transactions avec le plan Solo ?",
-    a: "Vous pouvez continuer à utiliser la caisse, mais les nouvelles ventes ne s'ajouteront plus à votre historique mensuel. Aucune interruption de service — mais vous recevrez une invitation à passer au plan Pro."
-  },
-  {
-    q: "Puis-je exporter mes données si je pars ?",
-    a: "Toujours. L'export de toutes vos ventes et de votre catalogue est disponible à tout moment, en un clic. Vous ne serez jamais 'piégé' — c'est une promesse."
-  },
-];
+/**
+ * AtmosphericBackground - Animated liquid background using CSS and Framer
+ */
+function AtmosphericBackground() {
+  return (
+    <div className="absolute inset-0 overflow-hidden -z-10 bg-white">
+      <motion.div
+        animate={{
+          scale: [1, 1.2, 1],
+          x: [0, 50, 0],
+          y: [0, -30, 0],
+        }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-100/40 rounded-full blur-[120px]"
+      />
+      <motion.div
+        animate={{
+          scale: [1.2, 1, 1.2],
+          x: [0, -40, 0],
+          y: [0, 60, 0],
+        }}
+        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+        className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-50/50 rounded-full blur-[100px]"
+      />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-gradient-to-tr from-blue-50/20 to-transparent rounded-full blur-[150px]" />
+    </div>
+  );
+}
 
-// ── Page principale ───────────────────────────────────────────────────────────
 export function LandingPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { isAuthenticated } = useAuthStore();
-  const [openFaq, setOpenFaq] = useState(null);
-  const [checkingOutPlanId, setCheckingOutPlanId] = useState(null);
-  const [checkoutError, setCheckoutError] = useState(null);
+  const { scrollYProgress } = useScroll();
 
-  // Scroll vers l'ancre hash après montage (ex: navigation depuis /#pricing)
+  // Trigger logic for Level 2 Navbar
+  const titleRef = useRef(null);
+  const isTitleInView = useInView(titleRef, { margin: "-100px 0px 0px 0px" });
+  const [showNav, setShowNav] = useState(false);
+
   useEffect(() => {
-    if (location.hash) {
-      const id = location.hash.replace('#', '');
-      const el = document.getElementById(id);
-      if (el) {
-        setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 80);
-      }
-    }
-  }, [location.hash]);
+    // Show navbar when title is NOT in view
+    setShowNav(!isTitleInView);
+  }, [isTitleInView]);
 
-  const handleDemo = () => {
-    useAuthStore.getState().loginAsDemo();
-    navigate('/pos/quick');
-  };
+  // Ref for the narrative section to track its local scroll progress
+  const narrativeRef = useRef(null);
+  const { scrollYProgress: narrativeScrollProgress } = useScroll({
+    target: narrativeRef,
+    offset: ["start end", "center center"]
+  });
 
-  const handleSelectPlan = async (priceId, planType) => {
+  // Transformations dynamiques: opacité et scale pour l'effet focus
+  const textOpacity = useTransform(narrativeScrollProgress, [0, 0.9, 1], [0.2, 0.8, 1]);
+  const textScale = useTransform(narrativeScrollProgress, [0, 1], [0.95, 1]);
+  const blurValue = useTransform(narrativeScrollProgress, [0, 0.5, 1], ["4px", "2px", "0px"]);
+
+  const handleSelectPlan = (planType) => {
     navigate(`/checkout-summary?plan=${planType}`);
   };
 
   return (
-    <div className="relative w-full overflow-x-hidden bg-[#f8f9fa] font-sans text-gray-900">
+    <div className="bg-white overflow-hidden selection:bg-blue-500/20">
+      <ProductNavbar isVisible={showNav} />
 
-      {/* Décor fond */}
-      <div className="absolute top-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute top-[-8%] left-[15%] w-[55%] h-[45%] bg-linear-to-br from-[#00f2ff]/15 to-[#0055ff]/8 rounded-full blur-[130px]" />
-        <div className="absolute top-[25%] right-[-8%] w-[38%] h-[38%] bg-linear-to-br from-blue-200/15 to-indigo-200/15 rounded-full blur-[120px]" />
-      </div>
+      {/* 1. HERO SECTION (Synchronized Architecture) */}
+      <ProductHero
+        id="heryze"
+        title="Heryze"
+        subtitle="Simplement Vital."
+        image={heryzePos}
+        titleRef={titleRef}
+      />
 
-      {/* ── HERO ──────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-[88vh] flex flex-col items-center justify-center text-center px-6 pb-16 pt-8">
+      {/* 2. DESCRIPTIVE SECTION (Apple-Style Scroll Transition) */}
+      <section ref={narrativeRef} id="presentation" className="pt-60 pb-32 px-6 flex items-center justify-center bg-white relative">
         <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.85, ease: 'easeOut' }}
-          className="flex flex-col items-center max-w-6xl"
+          style={{
+            opacity: textOpacity,
+            scale: textScale,
+            filter: `blur(${blurValue})`
+          }}
+          className="max-w-4xl text-center"
         >
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black tracking-[0.2em] uppercase mb-8 shadow-sm border border-blue-100/50">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-            CONÇU POUR LA CONFORMITÉ NF525
-          </div>
-
-          {/* Titre */}
-          <h1 className="text-4xl sm:text-6xl lg:text-[5.5rem] font-black tracking-[-0.04em] mb-10 leading-[1.1] text-gray-900">
-            <span className="block md:whitespace-nowrap">Encaissez sans internet.</span>
-            <span className="bg-linear-to-br from-[#00f2ff] to-[#0055ff] bg-clip-text text-transparent block md:whitespace-nowrap">
-              Votre comptable dit merci.
-            </span>
-          </h1>
-
-          {/* Sous-titre — phrase de positionnement principale */}
-          <p className="text-lg md:text-xl text-gray-500 max-w-2xl mt-3 font-medium leading-relaxed">
-            Heryze est le seul logiciel qui encaisse vos clients <strong className="text-gray-700">sans internet</strong>, et envoie la comptabilité à votre expert-comptable <strong className="text-gray-700">sans que vous touchiez à rien</strong>.
-          </p>
-
-          {/* Reformulations-clés */}
-          <div className="flex flex-wrap justify-center gap-3 mt-7">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-semibold shadow-sm">
-              <Smartphone className="w-4 h-4 text-blue-500" />
-              Zéro douchette à acheter
-            </span>
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-semibold shadow-sm">
-              <Wifi className="w-4 h-4 text-purple-500" />
-              Offline-first garanti
-            </span>
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-semibold shadow-sm">
-              <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-              Export FEC pour votre comptable
-            </span>
-          </div>
-
-          {/* CTAs */}
-          <div className="mt-12 flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <Link
-              to="/register"
-              className="bg-[#0055ff] text-white px-8 py-4 rounded-full font-bold tracking-wider uppercase text-sm shadow-xl shadow-blue-500/30 hover:bg-[#0044cc] hover:-translate-y-1 transition-all text-center"
-            >
-              Inscription
-            </Link>
-            <a
-              href="#pricing"
-              className="text-gray-400 px-4 py-4 rounded-full font-bold tracking-wider uppercase text-xs hover:text-gray-600 transition-all text-center"
-            >
-              Voir les tarifs
-            </a>
-          </div>
-
-          {/* Social proof micro */}
-          <p className="mt-8 text-xs text-gray-400 font-medium tracking-wide">
-            14 jours offerts pour tester de bout en bout · Sans engagement
+          <p className="text-2xl md:text-3xl font-medium text-black leading-relaxed text-balance transition-colors duration-500">
+            "Si Heryze transforme radicalement votre façon de travailler, c'est parce qu'il s'adapte à votre réalité, pas l'inverse. En faire votre partenaire, c'est s'assurer que chaque vente est un moment de fluidité, même sans connexion. C'est libérer votre esprit des calculs comptables pour vous concentrer sur ce qui compte vraiment : vos clients."
           </p>
         </motion.div>
       </section>
 
-      {/* ── 3 PILLIERS ────────────────────────────────────────────────────── */}
-      <section id="features" className="py-24 px-6 bg-white border-y border-gray-100 relative z-20">
-        <div className="max-w-6xl mx-auto">
-          <FadeIn className="text-center mb-16">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-500 text-xs font-bold tracking-widest uppercase mb-5">
-              L'intersection que personne d'autre n'occupe
-            </span>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
-              Trois forces. Un seul outil.
-            </h2>
-            <p className="mt-4 text-gray-500 text-lg max-w-2xl mx-auto font-medium">
-              Ni Pennylane ni Merlin ne font les trois simultanément.
-            </p>
-          </FadeIn>
+      {/* 3. POINTS FORTS (Carousel Interactif) */}
+      <section id="experience" className="py-40 bg-white">
+        <style>{`
+          .snap-scroll-container::-webkit-scrollbar { display: none; }
+          .snap-scroll-container { -ms-overflow-style: none; scrollbar-width: none; }
+          
+          @keyframes glow-sweep {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to   { transform: translate(-50%, -50%) rotate(360deg); }
+          }
+          .glow-card:hover .glow-ray {
+            opacity: 1;
+            animation: glow-sweep 2s linear infinite;
+          }
+        `}</style>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: <Wifi className="w-8 h-8 text-purple-600" />,
-                title: 'Caisse Offline-First',
-                desc: "Votre box tombe en panne ? Votre 4G lâche en plein service ? Heryze encaisse quand même. Les ventes s'empilent localement et se synchronisent dès que le réseau revient — automatiquement, sans rien faire.",
-                color: 'from-purple-50 to-pink-50',
-                border: 'border-purple-100',
-                tag: 'Avantage vs Merlin / Lightspeed',
-              },
-              {
-                icon: <Smartphone className="w-8 h-8 text-blue-600" />,
-                title: 'Scanner Zéro Achat',
-                desc: "L'appareil photo de n'importe quel smartphone devient un scanner de code-barre sans fil via WebRTC. Une douchette coûte 100–200 €. Avec Heryze, vous économisez ça dès le premier mois — et vous n'avez rien à brancher.",
-                color: 'from-blue-50 to-cyan-50',
-                border: 'border-blue-100',
-                tag: 'Avantage matériel direct',
-              },
-              {
-                icon: <FileSpreadsheet className="w-8 h-8 text-emerald-600" />,
-                title: 'Compta Sans Effort',
-                desc: "Heryze calcule votre TVA, génère votre Z-caisse, et prépare l'export FEC que votre expert-comptable peut importer directement dans son logiciel. Vous ne touchez à rien — lui non plus presque.",
-                color: 'from-emerald-50 to-teal-50',
-                border: 'border-emerald-100',
-                tag: 'Avantage vs Pennylane / Excel',
-              },
-            ].map((c, i) => (
-              <FadeIn key={c.title} delay={i * 0.12}>
-                <div className={`rounded-3xl p-8 bg-linear-to-br ${c.color} border ${c.border} h-full shadow-sm hover:shadow-md transition-shadow flex flex-col`}>
-                  <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center mb-5 shadow-sm border border-black/5">{c.icon}</div>
-                  <h3 className="font-bold text-gray-900 text-xl mb-3 tracking-tight">{c.title}</h3>
-                  <p className="text-gray-600 leading-relaxed text-sm font-medium flex-1">{c.desc}</p>
-                  <span className="mt-5 inline-block text-xs font-bold tracking-wider uppercase text-gray-400">{c.tag}</span>
-                </div>
-              </FadeIn>
-            ))}
-          </div>
+        <div className="px-6 md:px-12 lg:px-24 mb-6">
+          <FadeIn>
+            <h3 className="text-4xl md:text-5xl font-black tracking-tight text-gray-900">
+              L'expérience Heryze.
+            </h3>
+          </FadeIn>
+        </div>
+
+        <div className="snap-scroll-container flex overflow-x-auto snap-x snap-mandatory gap-8 px-6 md:px-12 lg:px-24 pb-12">
+          <ExperienceCard
+            icon={<Wifi className="w-20 h-20 text-blue-500 relative z-10" />}
+            color="blue"
+            glowColor="rgba(59,130,246,0.3)"
+            badge="La résilience offline"
+            title="Le réseau tombe. Votre business, jamais."
+            description={<>Heryze repose sur une architecture Offline-first. En zone blanche, en plein marché de Noël ou lors d'une coupure réseau, continuez d'encaisser sans la moindre friction. Vos données se synchronisent automatiquement dès le retour du signal. <span className="text-gray-900 font-bold">La stabilité n'est plus une option, c'est une promesse native.</span></>}
+          />
+
+          <ExperienceCard
+            icon={<Smartphone className="w-20 h-20 text-purple-500 relative z-10" />}
+            color="purple"
+            glowColor="rgba(139,92,246,0.3)"
+            badge="L'Économie Intelligente"
+            title="Votre smartphone est votre meilleure douchette."
+            description={<>Grâce à la technologie WebRTC (« La Douchette Magique »), transformez n'importe quel appareil mobile en scanner haute performance. Oubliez le plastique gris et les câbles encombrants de la concurrence. <span className="text-gray-900 font-bold">Le matériel du futur est déjà dans votre poche.</span></>}
+          />
+
+          <ExperienceCard
+            icon={<FileSpreadsheet className="w-20 h-20 text-emerald-500 relative z-10" />}
+            color="emerald"
+            glowColor="rgba(16,185,129,0.3)"
+            badge="La Sérénité Administrative"
+            title="Votre comptable va vous adorer."
+            description={<>La conformité n'est pas un gadget. Heryze intègre nativement les exigences de la norme NF525. Générez vos exports FEC et votre Z-caisse en un clic. <span className="text-gray-900 font-bold">La gestion devient silencieuse, vous laissant libre de créer.</span></>}
+          />
         </div>
       </section>
 
-      {/* ── COMPARATIF CONCURRENTS ────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-[#f8f9fa] relative z-20">
-        <div className="max-w-5xl mx-auto">
-          <FadeIn className="text-center mb-14">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-amber-50 text-amber-600 text-xs font-bold tracking-widest uppercase mb-5">
-              Comparatif honnête
-            </span>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
-              Pourquoi pas les autres ?
-            </h2>
+      {/* 4. DEEP DIVE SECTION (Apple Watch Style) */}
+      <section className="py-40 bg-zinc-950 text-white overflow-hidden">
+        <div className="px-6 md:px-24 mb-20">
+          <FadeIn>
+            <h3 className="text-5xl md:text-[6rem] font-bold tracking-tight max-w-4xl text-balance">
+              La comptabilité silencieuse.
+            </h3>
+            <p className="text-xl md:text-2xl text-zinc-400 font-medium max-w-2xl mt-8 leading-relaxed">
+              Heryze ne se contente pas d'encaisser. Elle analyse, classe et sécurise. Vos données de vente sont chaînées automatiquement pour garantir une conformité totale sans que vous ayez à lever le petit doigt. C'est l'intelligence Nexus au service de votre tranquillité.
+            </p>
+          </FadeIn>
+        </div>
+
+        <div className="px-6 md:px-12 lg:px-24 relative">
+          <FadeIn delay={0.4} y={60}>
+            {/* Tablet Mockup - Wide Style */}
+            <div className="relative mx-auto rounded-[3rem] p-4 border-[12px] border-zinc-800 bg-zinc-900 shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden">
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-32 h-1 bg-zinc-800 rounded-full" />
+              <img
+                src={heryzePos}
+                alt="Heryze Interface Tablet"
+                className="w-full h-auto rounded-[2rem]"
+              />
+              {/* Notification Overlay */}
+              <motion.div
+                initial={{ opacity: 0, x: 100 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1, duration: 0.8 }}
+                className="absolute top-1/2 right-12 -translate-y-1/2 bg-white/95 backdrop-blur-xl p-6 rounded-3xl shadow-2xl text-gray-900 max-w-xs border border-white/20"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-[10px] font-bold">H</div>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Notification</span>
+                </div>
+                <p className="font-bold text-lg leading-tight">Rapport Z généré et transmis à votre expert-comptable.</p>
+              </motion.div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+
+      {/* 6. COMPARATIF CONCURRENTS (Grid Minimaliste) */}
+      <section className="py-32 px-6 bg-white overflow-hidden">
+        <div className="max-w-6xl mx-auto">
+          <FadeIn className="text-center mb-20">
+            <span className="text-blue-600 font-bold tracking-widest uppercase text-xs">Comparatif Honnête</span>
+            <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mt-4 tracking-tight">Pourquoi pas les autres ?</h2>
           </FadeIn>
 
-          <div className="grid md:grid-cols-2 gap-5">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              {
-                rival: 'Merlin / Lightspeed',
-                color: 'border-orange-200 bg-orange-50/50',
-                tagColor: 'text-orange-500 bg-orange-100',
-                weakness: 'Cher (60 €+), interface datée, pas d\'offline',
-                heryze: 'Mêmes fonctionnalités, deux fois moins cher, et ça marche quand votre box tombe en panne.',
-              },
-              {
-                rival: 'Pennylane / QuickBooks',
-                color: 'border-blue-200 bg-blue-50/50',
-                tagColor: 'text-blue-500 bg-blue-100',
-                weakness: 'Pensé par des comptables pour des comptables — pas pour la caisse physique',
-                heryze: 'Pennylane vous donne une belle comptabilité. Mais il ne sait pas que vous avez vendu 47 croissants ce matin. Heryze si.',
-              },
-              {
-                rival: 'Shine / Qonto',
-                color: 'border-green-200 bg-green-50/50',
-                tagColor: 'text-green-600 bg-green-100',
-                weakness: 'Banque pro avec exports — pas de caisse physique',
-                heryze: 'Votre banque vous donne vos relevés. Heryze vous donne votre comptabilité. Ce n\'est pas la même chose — demandez à votre comptable.',
-              },
-              {
-                rival: 'Excel',
-                color: 'border-gray-200 bg-gray-50/50',
-                tagColor: 'text-gray-500 bg-gray-200',
-                weakness: 'Saisie manuelle, formules cassables, 1 à 3h par mois',
-                heryze: '19 €/mois, c\'est moins que 15 minutes de votre temps à la fin du mois pour refaire vos calculs à la main.',
-              },
+              { rival: 'Merlin / Lightspeed', desc: 'Trop complexe. Des interfaces datées qu\'on subit plus qu\'on n\'apprécie. Une dépendance totale au Cloud qui vous fragilise au moindre incident réseau.', color: 'border-gray-100' },
+              { rival: 'SumUp / Hardware', desc: 'Une taxe sur votre croissance. Des frais de transaction élevés et l\'obligation d\'acheter du matériel propriétaire qui bride votre liberté.', color: 'border-gray-100' },
+              { rival: 'Excel / Papier', desc: 'Un risque permanent. Des erreurs manuelles, une perte de temps colossale et une conformité fiscale inexistante.', color: 'border-gray-100' },
+              { rival: 'Heryze (Nexus)', desc: 'Simplement Vital. Architecture PWA ultra-fluide (60 FPS), résilience offline totale et zéro matériel imposé. L\'élégance du luxe alliée à la puissance du code.', color: 'border-blue-500 bg-blue-50/10 shadow-[0_0_30px_rgba(59,130,246,0.1)]', highlight: true }
             ].map((c, i) => (
               <FadeIn key={c.rival} delay={i * 0.1}>
-                <div className={`rounded-2xl border p-6 ${c.color}`}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className={`text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full ${c.tagColor}`}>
-                      vs {c.rival}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500 font-medium mb-3 italic">
-                    "{c.weakness}"
-                  </p>
-                  <div className="flex items-start gap-3">
-                    <ArrowRight className="w-4 h-4 text-[#0055ff] shrink-0 mt-0.5" />
-                    <p className="text-sm text-gray-800 font-semibold leading-snug">{c.heryze}</p>
-                  </div>
+                <div className={`p-8 rounded-[2.5rem] border ${c.color} h-full relative group`}>
+                  {c.highlight && (
+                    <motion.div
+                      animate={{ opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                      className="absolute inset-0 bg-blue-500/5 rounded-[2.5rem] -z-10"
+                    />
+                  )}
+                  <h4 className={`text-sm font-black uppercase tracking-widest mb-4 ${c.highlight ? 'text-blue-600' : 'text-gray-400'}`}>vs {c.rival}</h4>
+                  <p className={`text-lg font-bold leading-tight ${c.highlight ? 'text-gray-900' : 'text-gray-500'}`}>{c.desc}</p>
                 </div>
               </FadeIn>
             ))}
@@ -306,283 +391,255 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── COMMENT ÇA MARCHE ─────────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-white border-y border-gray-100 relative z-20">
-        <div className="max-w-4xl mx-auto">
-          <FadeIn className="text-center mb-16">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-green-50 text-green-600 text-xs font-bold tracking-widest uppercase mb-5">
-              Mise en route
-            </span>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
-              Prêt en 3 minutes.
-            </h2>
-            <p className="mt-4 text-gray-500 text-lg font-medium">
-              Pas d'installation. Pas de technicien. Pas de matériel.
-            </p>
+      {/* 7. MISE EN ROUTE (Séquence au Scroll) */}
+      <section className="py-40 bg-gray-50/50">
+        <div className="max-w-6xl mx-auto px-6">
+          <FadeIn className="text-center mb-24">
+            <span className="text-emerald-600 font-bold tracking-widest uppercase text-xs">Mise en route</span>
+            <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mt-4 tracking-tight">Prêt en 3 minutes.</h2>
           </FadeIn>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-12">
             {[
-              {
-                step: '01',
-                title: 'Créez votre compte',
-                desc: 'Inscrivez-vous en 30 secondes. Choisissez votre domaine métier (Boulangerie, Restaurant, Épicerie...). Heryze se configure automatiquement.',
-                icon: <Star className="w-6 h-6 text-blue-500" />,
-              },
-              {
-                step: '02',
-                title: 'Ajoutez vos produits',
-                desc: "Saisissez-les un par un ou importez votre catalogue CSV en un clic. Les prix TTC sont calculés automatiquement depuis le HT et la TVA.",
-                icon: <Cloud className="w-6 h-6 text-purple-500" />,
-              },
-              {
-                step: '03',
-                title: 'Encaissez, dormez',
-                desc: "Vendez en ligne ou hors ligne. En fin de journée, votre Z-caisse est prêt. En fin de mois, l'export pour votre comptable est généré en 2 clics.",
-                icon: <Clock className="w-6 h-6 text-emerald-500" />,
-              },
-            ].map((s, i) => (
-              <FadeIn key={s.step} delay={i * 0.15}>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center mb-5 shadow-sm">
+              { icon: <Star className="w-8 h-8" />, title: 'Compte', desc: 'Inscrivez-vous en 30 secondes.' },
+              { icon: <Smartphone className="w-8 h-8" />, title: 'Produits', desc: 'Importez votre catalogue en 1 clic.' },
+              { icon: <Zap className="w-8 h-8" />, title: 'Vente', desc: 'Commencez à encaisser immédiatement.' }
+            ].map((s, i) => {
+              const itemRef = useRef(null);
+              const isInView = useInView(itemRef, { margin: "-20% 0px -20% 0px" });
+
+              return (
+                <div key={s.title} ref={itemRef} className="flex flex-col items-center text-center group">
+                  <motion.div
+                    animate={isInView ? {
+                      scale: 1.1,
+                      backgroundColor: 'rgba(59, 130, 246, 1)',
+                      color: '#fff',
+                      boxShadow: '0 0 30px rgba(59, 130, 246, 0.5)'
+                    } : {
+                      scale: 1,
+                      backgroundColor: 'rgba(255, 255, 255, 1)',
+                      color: 'rgba(59, 130, 246, 1)',
+                      boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)'
+                    }}
+                    className="w-20 h-20 rounded-3xl flex items-center justify-center mb-8 border border-blue-100 transition-all duration-700"
+                  >
                     {s.icon}
-                  </div>
-                  <span className="text-xs font-black text-gray-300 tracking-widest mb-2">{s.step}</span>
-                  <h3 className="font-bold text-gray-900 text-lg mb-2 tracking-tight">{s.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed font-medium">{s.desc}</p>
+                  </motion.div>
+                  <h4 className="text-2xl font-bold text-gray-900 mb-4 tracking-tight">{s.title}</h4>
+                  <p className="text-gray-500 font-medium leading-relaxed">{s.desc}</p>
                 </div>
-              </FadeIn>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ── SECTION PRICING ───────────────────────────────────────────────── */}
-      <section id="pricing" className="py-24 px-6 bg-[#f8f9fa] relative z-20">
+      {/* 8. PRICING FINAL (Landing Page Sync) */}
+      <section id="store" className="py-48 px-6 bg-white relative overflow-hidden">
         <style>{`
-          @keyframes border-sweep {
+          @keyframes pricing-sweep {
             from { transform: translate(-50%, -50%) rotate(0deg); }
             to   { transform: translate(-50%, -50%) rotate(360deg); }
           }
           .card-pro-wrapper:hover .card-sweep-ray {
-            animation: border-sweep 1.2s cubic-bezier(0.4, 0, 0.2, 1) 1 forwards;
+            animation: pricing-sweep 1.2s cubic-bezier(0.4, 0, 0.2, 1) 1 forwards;
           }
         `}</style>
-        <div className="max-w-4xl mx-auto">
 
-          <FadeIn className="text-center mb-12">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-bold tracking-widest uppercase mb-5">
-              Tarification
-            </span>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
+        <div className="max-w-5xl mx-auto">
+          {/* 1. Titre & Démo Immédiate */}
+          <FadeIn className="text-center mb-32 flex flex-col items-center">
+            <h2 className="text-4xl md:text-7xl font-bold tracking-tight text-gray-900 mb-12">
               Testez à fond.
-              <br />
-              <span className="text-gray-400">Abonnez-vous si ça marche.</span>
             </h2>
-            <p className="mt-4 text-gray-500 text-lg font-medium max-w-xl mx-auto">
-              L'outil complet est à vous pendant 14 jours offerts. Sans bridage.
-            </p>
+
+            <p className="text-xl md:text-3xl text-gray-900 font-bold mb-8">Envie de tester sans créer de compte ?</p>
+            <button
+              onClick={() => {
+                useAuthStore.getState().loginAsDemo();
+                navigate('/pos/quick');
+              }}
+              className="px-16 py-7 border-2 border-dashed border-blue-200 hover:border-blue-500 hover:bg-blue-50/50 text-blue-600 rounded-[2rem] font-black text-2xl md:text-3xl transition-all flex items-center gap-5 group shadow-xl shadow-blue-500/5 hover:scale-105 active:scale-95"
+            >
+              <Zap className="w-10 h-10 text-blue-500 group-hover:animate-pulse" />
+              Accéder au Mode Démo
+            </button>
           </FadeIn>
 
-          {/* Bandeau erreur checkout */}
-          {checkoutError && (
-            <div className="max-w-3xl mx-auto mb-6 flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-medium">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{checkoutError}</span>
-            </div>
-          )}
+          {/* 2. Transition vers Pricing */}
+          <FadeIn delay={0.2} className="text-center mt-60 mb-24">
+            <p className="text-2xl md:text-4xl text-gray-400 font-medium italic">Abonnez-vous si cela vous convient.</p>
+          </FadeIn>
 
-          {/* Cartes plans */}
-          <div className="grid sm:grid-cols-2 gap-8 max-w-3xl mx-auto items-center">
-            {LANDING_PLANS.map((plan, i) => (
-              <FadeIn key={plan.id} delay={i * 0.1}>
-                {plan.highlight ? (
-                  /* ── Card Pro : contour bleu + sweep lumineux au hover ── */
-                  <div className="relative pt-5">
-                    {/* Badge Populaire */}
-                    <div className="absolute top-5 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
-                      <span className="bg-[#0099ff] text-white text-[11px] font-black tracking-widest uppercase px-4 py-1.5 rounded-full shadow-md whitespace-nowrap">
-                        {plan.badge}
-                      </span>
+          <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
+            {/* Plan Starter */}
+            <FadeIn>
+              <div className="relative rounded-[2.5rem] bg-gray-50 border border-gray-100 p-12 transition-all hover:scale-[1.02] duration-500 group">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-gray-400">
+                    <Cloud className="w-5 h-5" />
+                  </div>
+                  <span className="text-lg font-bold text-gray-900 uppercase tracking-widest">Starter</span>
+                </div>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-7xl font-black tracking-tighter text-gray-900">19€</span>
+                  <span className="text-gray-400 font-bold">/mois</span>
+                </div>
+                <p className="text-green-600 text-sm font-bold mb-8">14 jours offerts inclus</p>
+                <div className="space-y-4 mb-12">
+                  <div className="flex items-center gap-3 font-medium text-gray-700">
+                    <Check className="w-5 h-5 text-green-500" />
+                    <span>1 accès Solo</span>
+                  </div>
+                  <div className="flex items-center gap-3 font-medium text-gray-700">
+                    <Check className="w-5 h-5 text-green-500" />
+                    <span>Inventaire complet</span>
+                  </div>
+                  <div className="flex items-center gap-3 font-medium text-gray-700">
+                    <Check className="w-5 h-5 text-green-500" />
+                    <span>Exports FEC illimités</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleSelectPlan('starter')}
+                  className="w-full py-5 rounded-2xl font-black text-lg bg-gray-200 text-gray-900 hover:bg-gray-300 transition-all uppercase tracking-widest"
+                >
+                  Choisir Starter
+                </button>
+              </div>
+            </FadeIn>
+
+            {/* Plan Business (Premium) */}
+            <FadeIn delay={0.15}>
+              <div className="relative pt-6">
+                {/* Badge */}
+                <div className="absolute top-6 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
+                  <span className="bg-blue-600 text-white text-[11px] font-black tracking-widest uppercase px-6 py-2 rounded-full shadow-lg">
+                    Populaire
+                  </span>
+                </div>
+
+                {/* Wrapper border sweep */}
+                <div
+                  className="card-pro-wrapper relative rounded-[2.6rem] overflow-hidden p-[2px] transition-shadow duration-500 hover:shadow-[0_0_60px_rgba(59,130,246,0.5)] shadow-[0_0_40px_rgba(59,130,246,0.3)]"
+                  style={{ background: '#3b82f6' }}
+                >
+                  {/* Sweep Ray */}
+                  <div
+                    className="card-sweep-ray absolute left-1/2 top-1/2 w-[300%] h-[300%] pointer-events-none"
+                    style={{
+                      background: 'conic-gradient(from 0deg, transparent 0%, transparent 38%, rgba(255,255,255,0.9) 46%, white 50%, rgba(255,255,255,0.9) 54%, transparent 62%, transparent 100%)',
+                      transform: 'translate(-50%, -50%) rotate(0deg)'
+                    }}
+                  />
+
+                  {/* Nội dung card */}
+                  <div className="relative z-10 bg-white rounded-[2.5rem] p-12">
+                    <div className="flex items-center gap-3 mb-8">
+                      <div className="w-10 h-10 rounded-2xl bg-blue-50 shadow-sm flex items-center justify-center text-blue-600">
+                        <Zap className="w-5 h-5" />
+                      </div>
+                      <span className="text-lg font-black text-gray-900 uppercase tracking-widest">Business</span>
                     </div>
-                    {/* Wrapper border sweep — overflow hidden pour clipper le rayon */}
-                    <div
-                      className="card-pro-wrapper relative rounded-2xl overflow-hidden p-[2px] group transition-shadow duration-300 hover:shadow-[0_0_60px_rgba(0,153,255,0.4)]"
-                      style={{ background: '#0099ff' }}
-                    >
-                      {/* Rayon de lumière blanche qui fait le tour */}
-                      <div
-                        className="card-sweep-ray pointer-events-none absolute left-1/2 top-1/2 w-[300%] h-[300%]"
-                        style={{
-                          background: 'conic-gradient(from 0deg, transparent 0%, transparent 38%, rgba(255,255,255,0.92) 46%, white 50%, rgba(255,255,255,0.92) 54%, transparent 62%, transparent 100%)',
-                          transform: 'translate(-50%, -50%) rotate(0deg)',
-                        }}
-                      />
-                      {/* Carte intérieure blanche */}
-                      <div className="relative z-10 rounded-[14px] bg-white p-7">
-                        <div className="flex items-center gap-2 mb-5">
-                          <span className="text-[#0099ff]">{plan.icon}</span>
-                          <span className="text-base font-bold text-gray-900">{plan.label}</span>
-                        </div>
-                        <div className="flex items-baseline gap-2 mb-1">
-                          <span className="text-5xl font-black tracking-tighter text-gray-900">{plan.price}</span>
-                          <span className="text-gray-500 font-medium text-sm">{plan.priceSuffix}</span>
-                        </div>
-                        <p className="text-green-600 text-xs font-bold mt-2">14 jours offerts inclus</p>
-                        <hr className="my-5 border-gray-100" />
-                        <div className="flex items-start gap-2 text-sm font-medium text-gray-700 mb-8">
-                          <Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                          <span>{plan.usage}</span>
-                        </div>
-                        <button
-                          onClick={() => handleSelectPlan(plan.priceId, plan.planType)}
-                          disabled={checkingOutPlanId === plan.planType}
-                          className="w-full font-bold py-3 rounded-xl text-sm uppercase tracking-wider bg-[#0099ff] hover:bg-[#007acc] text-white shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-60 flex items-center justify-center gap-2"
-                        >
-                          {checkingOutPlanId === plan.planType
-                            ? <Loader2 className="w-4 h-4 animate-spin" />
-                            : 'Choisir ce plan'}
-                        </button>
-                        <p className="text-center text-xs text-gray-400 mt-2">
-                          Déjà inscrit ?{' '}
-                          <Link to="/login" className="text-[#0099ff] hover:underline font-semibold">
-                            Connexion
-                          </Link>
-                        </p>
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-7xl font-black tracking-tighter text-gray-900">39€</span>
+                      <span className="text-gray-400 font-bold">/mois</span>
+                    </div>
+                    <p className="text-green-600 text-sm font-bold mb-8">14 jours offerts inclus</p>
+                    <div className="space-y-4 mb-12">
+                      <div className="flex items-center gap-3 font-medium text-gray-700">
+                        <Check className="w-5 h-5 text-green-500" />
+                        <span>5 accès Multi-utilisateurs</span>
+                      </div>
+                      <div className="flex items-center gap-3 font-medium text-gray-700">
+                        <Check className="w-5 h-5 text-green-500" />
+                        <span>Gestion des stocks avancée</span>
+                      </div>
+                      <div className="flex items-center gap-3 font-medium text-gray-700">
+                        <Check className="w-5 h-5 text-green-500" />
+                        <span>Dashboard Analytics en direct</span>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  /* ── Card Starter : standard ── */
-                  <div className="relative rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-7">
-                    <div className="flex items-center gap-2 mb-5">
-                      <span className="text-gray-500">{plan.icon}</span>
-                      <span className="text-base font-bold text-gray-900">{plan.label}</span>
-                    </div>
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-5xl font-black tracking-tighter text-gray-900">{plan.price}</span>
-                      <span className="text-gray-500 font-medium text-sm">{plan.priceSuffix}</span>
-                    </div>
-                    <p className="text-green-600 text-xs font-bold mt-2">14 jours offerts inclus</p>
-                    <hr className="my-5 border-gray-100" />
-                    <div className="flex items-start gap-2 text-sm font-medium text-gray-700 mb-8">
-                      <Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                      <span>{plan.usage}</span>
-                    </div>
                     <button
-                      onClick={() => handleSelectPlan(plan.priceId, plan.planType)}
-                      disabled={checkingOutPlanId === plan.planType}
-                      className="w-full font-bold py-3 rounded-xl text-sm uppercase tracking-wider bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                      onClick={() => handleSelectPlan('business')}
+                      className="w-full py-5 rounded-2xl font-black text-lg bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 uppercase tracking-widest"
                     >
-                      {checkingOutPlanId === plan.planType
-                        ? <Loader2 className="w-4 h-4 animate-spin" />
-                        : 'Choisir ce plan'}
+                      Choisir Business
                     </button>
-                    <p className="text-center text-xs text-gray-400 mt-2">
-                      Déjà inscrit ?{' '}
-                      <Link to="/login" className="text-[#0099ff] hover:underline font-semibold">
-                            Connexion
-                      </Link>
-                    </p>
                   </div>
-                )}
-              </FadeIn>
-            ))}
-          </div>
-
-          <p className="text-center text-gray-400 text-sm font-medium mt-12">
-            Pas de frais cachés. Export de vos données disponible à tout moment.{' '}
-            <span className="font-bold text-gray-500">Vous ne serez jamais bloqué.</span>
-          </p>
-        </div>
-      </section>
-
-      {/* ── FAQ ───────────────────────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-white border-t border-gray-100 relative z-20">
-        <div className="max-w-3xl mx-auto">
-          <FadeIn className="text-center mb-14">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold tracking-widest uppercase mb-5">
-              Questions fréquentes
-            </span>
-            <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-              Ce que les commerçants nous demandent.
-            </h2>
-          </FadeIn>
-
-          <div className="space-y-3">
-            {FAQ.map((item, i) => (
-              <FadeIn key={i} delay={i * 0.06}>
-                <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-                  <button
-                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                    className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left font-bold text-gray-900 hover:bg-gray-50 transition-colors"
-                  >
-                    <span className="text-sm md:text-base">{item.q}</span>
-                    {openFaq === i
-                      ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
-                      : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
-                    }
-                  </button>
-                  {openFaq === i && (
-                    <div className="px-6 pb-5 text-sm text-gray-600 font-medium leading-relaxed border-t border-gray-100 pt-4">
-                      {item.a}
-                    </div>
-                  )}
                 </div>
-              </FadeIn>
-            ))}
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
+      {/* 9. FINAL CTA */}
+      <section className="py-60 px-6 bg-white border-t border-gray-100 text-center">
+        <FadeIn className="max-w-4xl mx-auto">
+          <p className="text-blue-600 font-bold tracking-[0.2em] uppercase text-sm mb-6">Heryze</p>
+          <p className="text-xl md:text-2xl text-gray-400 font-medium max-w-5xl mx-auto leading-relaxed mb-16">
+            <span className="text-gray-900 font-black">Heryze est bien plus qu'une caisse.</span> C'est l'expérience de vente la plus fluide, la plus robuste et la plus élégante jamais conçue pour les entrepreneurs qui refusent de choisir entre performance technique et luxe esthétique.
+            Elle ne fait rien que vous ne fassiez déjà : prises de commandes, gestion des stocks ou bilans financiers. Mais elle le fait avec la fluidité et l’effacement technologique que vous méritez. Il ne vous reste plus qu'une chose à faire : <span className="text-gray-900 font-black">entreprendre.</span>
+          </p>
+          <div className="flex flex-col items-center justify-center mt-16">
+            {/* Bouton Premium avec Aura (Sync Nexus Universe) */}
+            <div className="relative group flex items-center justify-center">
+              {/* Le halo (Aura Nexus) - Émanation strictement extérieure */}
+              <div className="absolute -inset-1 bg-blue-500/40 rounded-full blur-md opacity-20 group-hover:opacity-100 transition-opacity duration-500 will-change-[opacity,filter]"></div>
+
+              <motion.button
+                whileHover={{ y: -4 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                onClick={() => {
+                  if (isAuthenticated) {
+                    navigate('/pos');
+                  } else {
+                    navigate('/login?redirect=/pos');
+                  }
+                }}
+                className="relative px-12 py-5 rounded-full font-black text-xl border border-blue-600 text-blue-600 bg-white hover:bg-blue-600 hover:text-white transition-colors duration-300 flex items-center justify-center min-w-[240px] z-10 will-change-transform"
+              >
+                Lancer Heryze
+              </motion.button>
+            </div>
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* 10. ÉCOSYSTÈME NEXUS (Animated Orbit) 
+      <section className="py-60 px-6 bg-white flex flex-col items-center justify-center text-center">
+        <FadeIn className="max-w-4xl space-y-12 mb-32">
+          <h2 className="text-5xl md:text-[5rem] font-bold tracking-tight text-gray-900">Mieux ensemble.</h2>
+          <p className="text-xl md:text-2xl text-gray-400 font-medium max-w-2xl mx-auto leading-relaxed">
+            Heryze fait partie de Nexus. Vos données circulent, votre business respire.
+          </p>
+        </FadeIn>
+
+        <div className="relative w-80 h-80 flex items-center justify-center">
+          <div className="w-24 h-24 rounded-full bg-blue-500 flex items-center justify-center text-white font-black text-xl z-10 shadow-[0_0_60px_rgba(59,130,246,0.6)]">
+            N
           </div>
 
-          {/* Mention légale TVA — conformité document stratégique */}
-          <FadeIn delay={0.2} className="mt-10">
-            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-5 text-sm text-amber-800 font-medium leading-relaxed">
-              <ShieldCheck className="w-4 h-4 inline mr-2 text-amber-600" />
-              <strong>Mention légale :</strong> Les montants de TVA et les exports générés par Heryze sont calculés à titre indicatif à partir de vos ventes enregistrées. Ils ne constituent pas un conseil fiscal. Vérifiez toujours avec votre expert-comptable avant de déposer votre déclaration. Heryze est conçu pour la conformité NF525 — la certification formelle est en cours.
-            </div>
-          </FadeIn>
-        </div>
-      </section>
-      {/* ── CONTACT SECTION ────────────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-white shrink-0" id="contact">
-        <div className="max-w-4xl mx-auto">
-          <FadeIn>
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">
-                Une question ? Nous sommes là.
-              </h2>
-              <p className="mt-4 text-lg text-gray-500 font-medium">
-                Notre équipe vous répond sous 24h à 48h. Laissez-nous un message.
-              </p>
-            </div>
-            <ContactForm />
-          </FadeIn>
-        </div>
-      </section>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+            className="absolute w-full h-full border border-gray-100 rounded-full"
+          >
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center font-bold text-blue-600 shadow-sm">Syn</div>
+          </motion.div>
 
-      {/* ── CTA FINAL ─────────────────────────────────────────────────────── */}
-      <section className="py-28 px-6 bg-linear-to-br from-[#0055ff] to-[#00c4ff] relative overflow-hidden z-20">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.04\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] pointer-events-none" />
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <FadeIn>
-            <h2 className="text-4xl lg:text-5xl font-black text-white tracking-tight mb-5 leading-tight">
-              <span className="md:whitespace-nowrap">Votre prochaine journée sans panne,</span>
-              <br className="hidden md:block" />
-              commence maintenant.
-            </h2>
-            <p className="text-blue-100 text-lg font-medium mb-10 max-w-xl mx-auto">
-              Rejoignez les commerçants qui encaissent sans stresser — même quand internet lâche.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/register"
-                className="bg-white text-[#0055ff] px-9 py-4 rounded-full font-black tracking-wider uppercase text-sm shadow-2xl hover:-translate-y-1 transition-all text-center"
-              >
-                Inscription
-              </Link>
-            </div>
-          </FadeIn>
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="absolute w-full h-full border border-gray-100/50 rounded-full scale-125"
+          >
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center font-bold text-indigo-600 shadow-sm">Her</div>
+          </motion.div>
         </div>
       </section>
+      */}
 
     </div>
   );

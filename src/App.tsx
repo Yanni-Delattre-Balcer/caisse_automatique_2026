@@ -11,10 +11,10 @@ import { NexusLayout } from './layouts/NexusLayout';
 import { DashboardLayout } from './layouts/DashboardLayout';
 
 // Pages
-import { LandingPage } from './pages/LandingPage';
+import { LandingPageOld } from './pages/LandingPageOld';
 import { LandingPageV2 } from './pages/LandingPageV2';
 import { NexusPropPage } from './pages/NexusPropPage';
-import { HeryzePage } from './pages/HeryzePage';
+import { LandingPage } from './pages/LandingPage';
 import { NexusLeadershipPage } from './pages/NexusLeadershipPage';
 import { PricingPage } from './pages/PricingPage';
 import { ContactPage } from './pages/ContactPage';
@@ -32,6 +32,7 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { RemoteScannerView } from './features/scanner/RemoteScannerView';
 import { CheckoutSummaryPage } from './pages/CheckoutSummaryPage';
 import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
+import SpecsPage from './pages/SpecsPage';
 
 export default function App() {
   const initializeAuth = useAuthStore((state) => state.initialize);
@@ -49,7 +50,7 @@ export default function App() {
     <Routes>
       {/* Vitrine Commerciale (Legacy) */}
       <Route element={<LandingLayout />}>
-        <Route path="/old-landingpage" element={<LandingPage />} />
+        <Route path="/old-landingpage" element={<LandingPageOld />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/about" element={<AboutPage />} />
@@ -64,7 +65,7 @@ export default function App() {
       <Route element={<NexusLayout />}>
         <Route path="/nexus-prop" element={<NexusPropPage />} />
         <Route path="/nexus-leadership" element={<NexusLeadershipPage />} />
-        <Route path="/" element={<HeryzePage />} />
+        <Route path="/" element={<LandingPage />} />
       </Route>
 
       {/* Ticket public — sans authentification */}
@@ -72,6 +73,9 @@ export default function App() {
 
       {/* Onboarding post-inscription — standalone, pas de sidebar */}
       <Route path="/onboarding" element={<OnboardingPage />} />
+
+      {/* Spécifications techniques */}
+      <Route path="/specs" element={<SpecsPage />} />
 
       {/* Authentification */}
       <Route element={<AuthLayout />}>
