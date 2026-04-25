@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 import { VitePWA } from 'vite-plugin-pwa'
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 // Base path : '/' en dev local, '/caisse_automatique_2026/' sur GitHub Pages
 // Configurable via la variable d'env VITE_BASE_PATH dans le workflow CI
 const base = process.env.VITE_BASE_PATH || '/'
@@ -85,6 +87,7 @@ export default defineConfig(({ mode }) => ({
         enabled: false, // Désactivé en dev pour éviter les conflits avec HMR
       },
     }),
+    cloudflare()
   ],
   server: {
     host: true,

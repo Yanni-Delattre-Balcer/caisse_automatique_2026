@@ -31,3 +31,9 @@ discussions-gemini-strat-progression/57-synapso.md
 .env.local
 .env.*.local
 
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
